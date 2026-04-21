@@ -3,7 +3,7 @@ import { Video, Download, Clock, Hash } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
-export default function RoomHeader({ roomCode }: { roomCode: string }) {
+export default function RoomHeader({ roomCode, joinTime }: { roomCode: string, joinTime: Date }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -35,13 +35,20 @@ export default function RoomHeader({ roomCode }: { roomCode: string }) {
             
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse" />
           </div>
-          <motion.span 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="font-black text-sm uppercase tracking-[0.2em] bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent"
-          >
-            VoiceMeet
-          </motion.span>
+          <div className="flex flex-col">
+            <motion.span 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="font-black text-sm uppercase tracking-[0.2em] bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent leading-none"
+            >
+              VoiceMeet
+            </motion.span>
+            {joinTime && (
+              <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest mt-0.5 leading-none">
+                Joined At: {joinTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Meeting Code Placeholder - Blue Black Styled */}

@@ -9,7 +9,7 @@ import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
 import ParticipantStage from '@/components/meeting/ParticipantStage';
-import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X, Video, Download } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,13 +43,19 @@ function RoomEventListener() {
                  icon: '✋',
                  className: 'bg-amber-500 text-black font-black'
                });
+               // Expert Sound Alert for Hand Raise
+               const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2633/2633-preview.mp3');
+               audio.play().catch(e => console.error('Audio play blocked:', e));
              }
           }
         }
 
         if (data.action === 'mute' && data.targetSid === localParticipant.sid) {
           localParticipant.setMicrophoneEnabled(false);
-          toast.warning('Host muted your microphone');
+          toast.warning('Host muted your microphone', {
+            description: 'The host has requested privacy or noise reduction.',
+            icon: <ShieldAlert className="w-4 h-4 text-red-500" />
+          });
         }
         if (data.action === 'lowerHand' && data.targetSid === localParticipant.sid) {
           const metadata = JSON.parse(localParticipant.metadata || '{}');
@@ -71,6 +77,29 @@ function RoomEventListener() {
   return null;
 }
 
+function MeetingTimer() {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setSeconds(s => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const format = (sec: number) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+       <span className="text-[10px] font-black font-mono text-white tracking-widest">{format(seconds)}</span>
+    </div>
+  );
+}
+
 interface MeetingProps {
   session: Session | null;
 }
@@ -90,8 +119,10 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const [joinTime, setJoinTime] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const normalizedCode = code?.trim().toLowerCase();
 
@@ -102,41 +133,45 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const isCreator = searchParams.get('host') === 'true';
 
   useEffect(() => {
-    // Sync URL name to state once
-    const nameFromUrl = searchParams.get('name');
-    if (nameFromUrl && !displayName) {
-      setDisplayName(nameFromUrl);
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handlePWAInstall = async () => {
+    if (!deferredPrompt) {
+       toast.info("Application already installed or link established.", {
+         description: "Check your home screen or desktop for VoiceMeet."
+       });
+       return;
     }
-  }, [searchParams]);
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     const validateMeeting = async () => {
       if (!normalizedCode) return;
 
-      // If Supabase isn't configured, we skip DB validation and trust the room code
       if (!isConfigured) {
-        console.warn('Supabase not configured. Skipping room validation.');
         setIsLoading(false);
         setIsHost(isCreator);
         return;
       }
 
       try {
-        // Attempt to validate meeting exists in DB
-        const { data: meeting, error: fetchError } = await supabase
+        const { data: meeting } = await supabase
           .from('meetings')
           .select('*')
           .eq('code', normalizedCode)
           .maybeSingle();
 
-        if (fetchError) {
-          console.warn('Supabase fetch notice (ignoring):', fetchError);
-        }
-
-        // Host is either the creator (from URL) or the DB record says so
         setIsHost(isCreator || (Boolean(_session?.user?.id) && _session?.user?.id === meeting?.host_id));
-      } catch (err: any) {
-        console.warn('Validation notice (ignoring):', err);
+      } catch (err) {
         setIsHost(isCreator);
       } finally {
         setIsLoading(false);
@@ -144,20 +179,13 @@ export default function Meeting({ session: _session }: MeetingProps) {
     };
 
     validateMeeting();
-  }, [code, navigate, _session?.user?.id]);
+  }, [code, _session?.user?.id]);
 
   const handleJoin = async () => {
     setIsJoining(true);
     try {
       const roomToJoin = normalizedCode;
-      
-      // Prioritize the local backend first to ensure consistency in the same environment
-      const endpoints = [
-        '/api/livekit/token', 
-        '/api/token',
-        'https://vociz-47v8.onrender.com/api/token',
-        'https://vociz.onrender.com/api/token'
-      ];
+      const endpoints = ['/api/livekit/token', '/api/token'];
       let res = null;
       let lastError = '';
 
@@ -166,49 +194,25 @@ export default function Meeting({ session: _session }: MeetingProps) {
           const attempt = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              room: roomToJoin, 
-              identity: displayName,
-              isHost: isHost // Pass host status to backend
-            }),
+            body: JSON.stringify({ room: roomToJoin, identity: displayName, isHost }),
           });
           if (attempt.ok) {
             res = attempt;
-            console.log(`Connected via API: ${endpoint}`);
             break;
-          } else {
-            const errBody = await attempt.json().catch(() => ({}));
-            lastError = errBody.error || `Error ${attempt.status} from ${endpoint}`;
           }
         } catch (e) {
-          lastError = `Endpoint ${endpoint} unreachable`;
+          lastError = 'Server unreachable';
         }
       }
 
-      if (!res) throw new Error(lastError || 'Failed to get join token from server');
-
+      if (!res) throw new Error(lastError || 'Join failed');
       const data = await res.json();
-      const joinToken = data.token || data; // Handle different API response shapes
-      const returnedUrl = data.url || data.serverUrl; // Some backends return the URL
-
-      if (typeof joinToken !== 'string') {
-        throw new Error('Invalid token format received from server');
-      }
-
-      if (returnedUrl) {
-        setLiveKitUrl(returnedUrl);
-        console.log(`Using LiveKit Server: ${returnedUrl}`);
-      }
-      
-      toast.success('Bridge Established', { 
-        description: `Connected to room ${roomToJoin} on ${returnedUrl || liveKitUrl || 'default cluster'}` 
-      });
-
-      setToken(joinToken);
+      setJoinTime(new Date());
+      setToken(data.token || data);
+      if (data.url) setLiveKitUrl(data.url);
       setHasJoined(true);
     } catch (err: any) {
-      console.error('Join error:', err);
-      toast.error('Connection failed: ' + (err.message || 'Could not connect to voice server'));
+      toast.error(err.message || 'Connection failed');
     } finally {
       setIsJoining(false);
     }
@@ -218,40 +222,19 @@ export default function Meeting({ session: _session }: MeetingProps) {
     return (
       <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center gap-6 overflow-hidden relative">
         <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none" />
-        <div className="relative">
-          <div className="w-24 h-24 border-4 border-blue-500/10 rounded-full" />
-          <Loader2 className="w-24 h-24 text-blue-500 animate-spin absolute top-0" />
-        </div>
-        <div className="text-center space-y-2 z-10">
-          <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
-            Initializing Link
-          </h2>
-          <p className="text-slate-500 font-mono text-sm animate-pulse">ESTABLISHING ENCRYPTED CONNECTION: {code?.toUpperCase()}</p>
-        </div>
+        <Loader2 className="w-16 h-16 text-blue-500 animate-spin" />
+        <h2 className="text-xl font-black text-white/50 uppercase tracking-[0.4em] animate-pulse">Establishing Node</h2>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-center overflow-hidden relative">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[120px] pointer-events-none" />
-        <div className="z-10 glass-surface-heavy rounded-3xl p-12 max-w-md shadow-2xl space-y-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/50">
-            <AlertCircle className="w-8 h-8 text-red-500" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white tracking-tight">{error}</h2>
-            <p className="text-slate-400 leading-relaxed font-medium">
-              {errorDetails || "We couldn't get you into the room. Please check the code and your configuration."}
-            </p>
-          </div>
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full h-12 bg-white text-black hover:bg-slate-200 rounded-xl font-bold transition-all"
-          >
-            Return to Base
-          </button>
+      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-center">
+        <div className="glass-surface-heavy rounded-3xl p-12 max-w-sm border border-red-500/20">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-6" />
+          <h2 className="text-2xl font-black text-white mb-2 uppercase italic tracking-tighter">{error}</h2>
+          <Button onClick={() => navigate('/')} className="w-full mt-6 bg-white text-black font-black uppercase tracking-widest text-xs h-12 rounded-xl">Return to Base</Button>
         </div>
       </div>
     );
@@ -263,54 +246,84 @@ export default function Meeting({ session: _session }: MeetingProps) {
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none" />
         
         <div className="z-10 w-full max-w-md space-y-8">
-          <RoomHeader roomCode={code!} />
+           {/* Expert Brand Header with PWA prompt */}
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-px h-12 bg-gradient-to-b from-transparent to-blue-500/50" />
+            <div className="flex items-center gap-4">
+               <Video className="w-8 h-8 text-blue-500" />
+               <h2 className="text-xl font-black uppercase tracking-[0.3em] text-white">VoiceMeet</h2>
+            </div>
+          </div>
           
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-surface rounded-3xl p-10 shadow-2xl text-center space-y-8 mt-8 border border-white/10"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-surface-heavy rounded-[2.5rem] p-10 shadow-3xl text-center space-y-8 mt-8 border border-white/5 bg-black/40"
           >
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-white tracking-tight">Ready to join?</h1>
-              <p className="text-slate-400 font-medium">Room Code: <span className="text-blue-400 font-mono font-bold">{code}</span></p>
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-500/80 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 animate-pulse">Establishing Node Link</span>
+              <h1 className="text-3xl font-black text-white tracking-tighter mt-4 italic">PRE-FLIGHT CHECK</h1>
+              <p className="text-slate-500 font-mono text-xs">ENCRYPTED ID: <span className="text-blue-400 font-bold">{code?.toUpperCase()}</span></p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-col items-center gap-4 py-8">
-                <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-2xl uppercase transition-all">
-                  {displayName ? displayName.slice(0, 2) : '?'}
+            <div className="space-y-6">
+              <div className="flex flex-col items-center gap-6 py-4">
+                <div className="w-28 h-28 rounded-full border border-white/5 flex items-center justify-center p-1 bg-white/[0.02]">
+                   <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600 to-blue-900 flex items-center justify-center shadow-inner relative group overflow-hidden">
+                      <span className="text-4xl font-black text-white/90 drop-shadow-2xl z-10">{displayName ? displayName.slice(0, 1).toUpperCase() : '?'}</span>
+                      <div className="absolute inset-0 bg-blue-400/20 mix-blend-overlay group-hover:scale-110 transition-transform" />
+                   </div>
                 </div>
-                <div className="space-y-3 w-full">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Identity</label>
+                <div className="space-y-4 w-full">
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-[0.3em] font-black text-slate-600 ml-1">Identity Override</label>
                     <Input 
-                      placeholder="Who are you?" 
+                      placeholder="ENTER NODE IDENTITY" 
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 text-center font-medium focus:ring-blue-500/50"
+                      className="h-14 bg-black/40 border-white/5 rounded-2xl text-white placeholder:text-slate-800 text-center font-black tracking-widest focus:ring-blue-500/30 text-lg border-2"
                     />
                   </div>
                 </div>
               </div>
 
-              <Button 
-                onClick={handleJoin}
-                disabled={isJoining || !displayName.trim()}
-                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all"
-              >
-                {isJoining ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Establishing Link...
-                  </div>
-                ) : 'Join Meeting'}
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={handleJoin}
+                  disabled={isJoining || !displayName.trim()}
+                  className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white rounded-[1.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 active:scale-[0.98] transition-all border-none"
+                >
+                  {isJoining ? (
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Engaging...
+                    </div>
+                  ) : 'INITIATE JOIN'}
+                </Button>
+
+                {/* Intelligent PWA Download Button */}
+                <Button
+                  onClick={handlePWAInstall}
+                  variant="outline"
+                  className="w-full h-14 bg-white/5 border-white/5 text-slate-400 rounded-[1.2rem] flex items-center justify-center gap-3 hover:text-white hover:bg-white/10 group transition-all"
+                >
+                   <Download className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                   <span className="text-[9px] font-black uppercase tracking-[0.2em]">Add to Home Base (Android/iOS/PC)</span>
+                </Button>
+              </div>
             </div>
           </motion.div>
 
-          <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
-            Secured end-to-end voice link
-          </p>
+          <div className="flex justify-between items-center px-4">
+             <div className="flex flex-col gap-1 items-start">
+                <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter">System Version</span>
+                <span className="text-[10px] font-black text-slate-500 font-mono">NODE_OS v4.2.1-STABLE</span>
+             </div>
+             <div className="flex flex-col gap-1 items-end">
+                <span className="text-[8px] font-black text-slate-700 uppercase tracking-tighter">Encrypted Via</span>
+                <span className="text-[10px] font-black text-blue-500 font-mono">QUANTUM_LIT v2</span>
+             </div>
+          </div>
         </div>
       </div>
     );
@@ -330,12 +343,15 @@ export default function Meeting({ session: _session }: MeetingProps) {
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[150px] pointer-events-none z-0"></div>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30%] h-[30%] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0"></div>
 
-      <RoomHeader roomCode={normalizedCode!} />
+      <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
       <main className="flex-1 flex overflow-hidden lg:p-6 gap-6 z-10 relative">
         {/* Main Stage */}
         <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col">
            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
+           <div className="absolute top-4 right-6 z-40 hidden md:block">
+              <MeetingTimer />
+           </div>
            <ParticipantStage />
         </div>
 

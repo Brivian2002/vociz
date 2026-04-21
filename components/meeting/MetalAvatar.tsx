@@ -17,17 +17,31 @@ export default function MetalAvatar({ name, size = 100, className, isSpeaking }:
     .toUpperCase()
     .slice(0, 2);
 
-  // Generate a deterministic dark/metallic color based on the name
+  // Generate a deterministic color based on the name from the requested palette
   const getColors = (str: string) => {
+    const palette = [
+      { main: '#0a0a0a', accent: '#404040', shine: '#ffffff', name: 'black' },
+      { main: '#262626', accent: '#737373', shine: '#d4d4d4', name: 'grey' },
+      { main: '#0f172a', accent: '#3b82f6', shine: '#93c5fd', name: 'blue-black' },
+      { main: '#422006', accent: '#eab308', shine: '#fde047', name: 'yellow' },
+      { main: '#450a0a', accent: '#ef4444', shine: '#fca5a5', name: 'red' },
+      { main: '#1e3a8a', accent: '#3b82f6', shine: '#bfdbfe', name: 'blue' },
+      { main: '#500724', accent: '#ec4899', shine: '#fbcfe8', name: 'pink' },
+      { main: '#064e3b', accent: '#10b981', shine: '#d1fae5', name: 'green' },
+      { main: '#451a03', accent: '#92400e', shine: '#fcd34d', name: 'brown' },
+    ];
+
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const hue = Math.abs(hash % 360);
+    const index = Math.abs(hash) % palette.length;
+    const color = palette[index];
+
     return {
-      main: `hsl(${hue}, 40%, 20%)`,
-      accent: `hsl(${hue}, 60%, 50%)`,
-      shine: `hsl(${hue}, 50%, 80%)`,
+      main: color.main,
+      accent: color.accent,
+      shine: color.shine,
     };
   };
 

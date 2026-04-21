@@ -129,31 +129,33 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 flex flex-col items-center gap-4 pointer-events-none">
       <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
-        {/* Mobile Toggle Chat */}
+        {/* Toggle Chat - Now before Hand Raise */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('chat')}
           className={cn(
-            "lg:hidden w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
+            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
             activeTab === 'chat' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
           )}
+          title="Toggle Messages"
         >
           {activeTab === 'chat' ? <X className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
         </button>
 
-        {/* Mobile Toggle Users */}
+        {/* Toggle Users Directory */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('participants')}
           className={cn(
-            "lg:hidden w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
+            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
             activeTab === 'participants' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
           )}
+          title="Node Directory"
         >
           {activeTab === 'participants' ? <X className="w-5 h-5" /> : <Users className="w-5 h-5" />}
         </button>
 
-        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2 lg:hidden" />
+        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" />
 
         {/* Mute */}
         <button 
