@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ interface Message {
   created_at: string;
 }
 
-export default function ChatPanel({ roomCode, displayName, session }: { roomCode: string, displayName: string, session: Session | null }) {
+export default function ChatPanel({ roomCode, displayName }: { roomCode: string, displayName: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -30,6 +30,8 @@ export default function ChatPanel({ roomCode, displayName, session }: { roomCode
   useEffect(() => {
     // Initial fetch
     const fetchMessages = async () => {
+      if (!isConfigured) return;
+      
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -42,19 +44,22 @@ export default function ChatPanel({ roomCode, displayName, session }: { roomCode
     fetchMessages();
 
     // Realtime subscription
-    const channel = supabase
-      .channel(`chat:${roomCode}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-        }
-      )
-      .subscribe();
+    let channel: any = null;
+    if (isConfigured) {
+      channel = supabase
+        .channel(`chat:${roomCode}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
+          (payload) => {
+            setMessages((prev) => [...prev, payload.new as Message]);
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [roomCode]);
 
@@ -71,17 +76,31 @@ export default function ChatPanel({ roomCode, displayName, session }: { roomCode
     const messageToSend = newMessage.trim();
     setNewMessage('');
 
-    const { error } = await supabase.from('chat_messages').insert({
-      meeting_code: roomCode,
-      user_id: session?.user?.id || null,
-      display_name: displayName,
-      message: messageToSend,
-      attachments: [],
-    });
+    if (isConfigured) {
+      const { error } = await supabase.from('chat_messages').insert({
+        meeting_code: roomCode,
+        user_id: null,
+        display_name: displayName,
+        message: messageToSend,
+        attachments: [],
+      });
 
-    if (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
+      if (error) {
+        console.error('Error sending message:', error);
+        toast.error('Failed to send message');
+      }
+    } else {
+      // Local echo if no DB
+      const tempMsg: Message = {
+        id: Math.random().toString(),
+        meeting_code: roomCode,
+        user_id: null,
+        display_name: displayName,
+        message: messageToSend,
+        attachments: [],
+        created_at: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, tempMsg]);
     }
   };
 
@@ -89,6 +108,11 @@ export default function ChatPanel({ roomCode, displayName, session }: { roomCode
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!isConfigured) {
+      toast.error('Storage unavailable without configuration');
+      return;
+    }
+    
     if (file.size > 5 * 1024 * 1024) {
       toast.error('File too large (max 5MB)');
       return;
@@ -112,7 +136,7 @@ export default function ChatPanel({ roomCode, displayName, session }: { roomCode
 
       await supabase.from('chat_messages').insert({
         meeting_code: roomCode,
-        user_id: session?.user?.id || null,
+        user_id: null,
         display_name: displayName,
         message: '',
         attachments: [{

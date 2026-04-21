@@ -14,28 +14,12 @@ import { Session } from '@supabase/supabase-js';
 import InstallPWA from '@/components/InstallPWA';
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-background text-foreground">
         <Routes>
-          <Route path="/" element={<Home session={session} />} />
-          <Route path="/meet/:code" element={<Meeting session={session} />} />
+          <Route path="/" element={<Home session={null} />} />
+          <Route path="/meet/:code" element={<Meeting session={null} />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

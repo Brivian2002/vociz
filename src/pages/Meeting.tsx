@@ -17,7 +17,7 @@ interface MeetingProps {
   session: Session | null;
 }
 
-export default function Meeting({ session }: MeetingProps) {
+export default function Meeting({ session: _session }: MeetingProps) {
   const { code } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -30,21 +30,23 @@ export default function Meeting({ session }: MeetingProps) {
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
-  const displayName = searchParams.get('name') || session?.user?.user_metadata?.full_name || 'Guest';
+  const displayName = searchParams.get('name') || 'Guest';
+  const isCreator = searchParams.get('host') === 'true';
 
   useEffect(() => {
     const validateMeeting = async () => {
       if (!code) return;
 
+      // If Supabase isn't configured, we skip DB validation and trust the room code
       if (!isConfigured) {
-        setError('Configuration Missing');
-        setErrorDetails('Supabase environment variables are not set. Check the Secrets sidebar.');
+        console.warn('Supabase not configured. Skipping room validation.');
         setIsLoading(false);
+        setIsHost(isCreator);
         return;
       }
 
       try {
-        // Validate meeting exists
+        // Attempt to validate meeting exists in DB
         const { data: meeting, error: fetchError } = await supabase
           .from('meetings')
           .select('*')
@@ -52,29 +54,22 @@ export default function Meeting({ session }: MeetingProps) {
           .maybeSingle();
 
         if (fetchError) {
-          console.error('Supabase fetch error:', fetchError);
-          throw new Error('Database connection failed');
+          console.warn('Supabase fetch notice (ignoring):', fetchError);
+          // Don't throw, just allow joining if DB is acting up
         }
 
-        if (!meeting) {
-          setError('Meeting not found');
-          toast.error('This meeting code does not exist.');
-          setTimeout(() => navigate('/'), 3000);
-          return;
-        }
-
-        setIsHost(session?.user?.id === meeting.host_id);
+        // Host is either the creator (from URL) or the DB record says so
+        setIsHost(isCreator || (Boolean(_session?.user?.id) && _session?.user?.id === meeting?.host_id));
       } catch (err: any) {
-        console.error('Validation error:', err);
-        setError('Connection failed');
-        setErrorDetails(err.message || 'Could not verify meeting details.');
+        console.warn('Validation notice (ignoring):', err);
+        setIsHost(isCreator);
       } finally {
         setIsLoading(false);
       }
     };
 
     validateMeeting();
-  }, [code, session, navigate]);
+  }, [code, navigate]);
 
   const handleJoin = async () => {
     setIsJoining(true);
@@ -285,7 +280,7 @@ export default function Meeting({ session }: MeetingProps) {
               </TabsList>
               <div className="flex-1 overflow-hidden">
                 <TabsContent value="chat" className="h-full m-0">
-                  <ChatPanel roomCode={code!} displayName={displayName} session={session} />
+                  <ChatPanel roomCode={code!} displayName={displayName} />
                 </TabsContent>
                 <TabsContent value="participants" className="h-full m-0">
                   <ParticipantsPanel />

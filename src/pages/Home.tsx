@@ -60,29 +60,27 @@ export default function Home({ session }: HomeProps) {
   };
 
   const handleCreateMeeting = async () => {
-    if (!session) {
-      toast.error('Please sign in to create a meeting');
-      return;
-    }
-
     setIsCreating(true);
     const code = nanoid(10);
     
     try {
-      const { error } = await supabase
-        .from('meetings')
-        .insert({
-          code,
-          host_id: session.user.id,
-          is_active: true,
-        });
-
-      if (error) throw error;
-
-      navigate(`/meet/${code}`);
+      // Try to save to DB, but don't block if it fails or if user is anonymous
+      // This is "smarter" WebRTC - the code itself is the room credential
+      if (isConfigured) {
+        await supabase
+          .from('meetings')
+          .insert({
+            code,
+            is_active: true,
+          });
+      }
+      
+      const hostParam = `&host=true${displayName ? '' : '?'}`;
+      navigate(`/meet/${code}${displayName ? `?name=${encodeURIComponent(displayName)}` : ''}&host=true`);
     } catch (error: any) {
-      console.error('Error creating meeting:', error);
-      toast.error('Failed to create meeting');
+      console.warn('Meeting creation DB notice:', error);
+      // Still navigate even if DB save fails - the room exists in LiveKit dynamically
+      navigate(`/meet/${code}${displayName ? `?name=${encodeURIComponent(displayName)}` : ''}&host=true`);
     } finally {
       setIsCreating(false);
     }
@@ -121,78 +119,52 @@ export default function Home({ session }: HomeProps) {
         </div>
 
         <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-8 shadow-2xl space-y-6">
-          {!session ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-white">Welcome back</h3>
-                <p className="text-sm text-slate-400">Sign in with Google to start hosting meetings.</p>
-              </div>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4">
               <Button 
-                onClick={handleLogin} 
-                className="w-full h-12 bg-white text-black hover:bg-slate-200 rounded-xl font-bold flex items-center justify-center gap-2"
+                onClick={handleCreateMeeting} 
+                disabled={isCreating}
+                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 gap-2"
               >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" referrerPolicy="no-referrer" />
-                Sign in with Google
+                <Plus className="w-6 h-6" />
+                {isCreating ? 'Initializing...' : 'Start New Meeting'}
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/10">
-                <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold border border-white/20 uppercase">
-                  {session.user?.email?.[0]}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium text-white truncate">{session.user?.email}</p>
-                  <button onClick={() => supabase.auth.signOut()} className="text-[10px] text-slate-500 hover:text-slate-300 uppercase tracking-widest font-bold">Sign Out</button>
-                </div>
+              
+              <div className="relative">
+                <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
+                <span className="relative z-10 px-4 bg-[#0a0a0f] text-[10px] uppercase tracking-widest font-bold text-slate-600 left-1/2 -translate-x-1/2 transition-colors">OR JOIN EXISTING</span>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Meeting Code</label>
+                  <Input 
+                    placeholder="e.g. abc-xyz-123" 
+                    value={meetingCode}
+                    onChange={(e) => setMeetingCode(e.target.value)}
+                    className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Name</label>
+                  <Input 
+                    placeholder="Enter your display name" 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                  />
+                </div>
                 <Button 
-                  onClick={handleCreateMeeting} 
-                  disabled={isCreating}
-                  className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 gap-2"
+                  onClick={handleJoinMeeting}
+                  disabled={!meetingCode || !displayName}
+                  variant="outline"
+                  className="w-full h-12 border-white/10 hover:bg-white/5 text-white rounded-xl font-bold"
                 >
-                  <Plus className="w-6 h-6" />
-                  {isCreating ? 'Initializing...' : 'New Meeting'}
+                  Join Room
                 </Button>
-                
-                <div className="relative">
-                  <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
-                  <span className="relative z-10 px-4 bg-[#0a0a0f] text-[10px] uppercase tracking-widest font-bold text-slate-600 left-1/2 -translate-x-1/2 transition-colors">OR</span>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Meeting Code</label>
-                    <Input 
-                      placeholder="e.g. abc-xyz-123" 
-                      value={meetingCode}
-                      onChange={(e) => setMeetingCode(e.target.value)}
-                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Name</label>
-                    <Input 
-                      placeholder="How should we call you?" 
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleJoinMeeting}
-                    disabled={!meetingCode || !displayName}
-                    variant="outline"
-                    className="w-full h-12 border-white/10 hover:bg-white/5 text-white rounded-xl font-bold"
-                  >
-                    Join Meeting
-                  </Button>
-                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="flex justify-center gap-6 text-slate-500">
