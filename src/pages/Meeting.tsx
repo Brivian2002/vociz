@@ -13,7 +13,7 @@ import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X } from 'luci
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { RoomEvent } from 'livekit-client';
 
 function RoomEventListener() {
@@ -26,6 +26,27 @@ function RoomEventListener() {
       const str = decoder.decode(payload);
       try {
         const data = JSON.parse(str);
+        
+        // Handle signals (Chime/Hand Raise)
+        if (data.type === 'signal') {
+          if (data.action === 'chime') {
+             toast(`Attention: Chime from ${data.sender || 'Host'}`, {
+               icon: '🔔',
+               className: 'bg-blue-600 text-white font-black'
+             });
+             const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+             audio.play().catch(e => console.error('Audio play blocked:', e));
+          }
+          if (data.action === 'handRaise') {
+             if (data.state) {
+               toast(`${data.sender || 'Peer'} raised their hand`, {
+                 icon: '✋',
+                 className: 'bg-amber-500 text-black font-black'
+               });
+             }
+          }
+        }
+
         if (data.action === 'mute' && data.targetSid === localParticipant.sid) {
           localParticipant.setMicrophoneEnabled(false);
           toast.warning('Host muted your microphone');
@@ -305,33 +326,35 @@ export default function Meeting({ session: _session }: MeetingProps) {
       className="flex flex-col h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative"
     >
       {/* Immersive Background Decor */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none z-0"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none z-0"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[150px] pointer-events-none z-0"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30%] h-[30%] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none z-0"></div>
 
       <RoomHeader roomCode={normalizedCode!} />
 
-      <main className="flex-1 flex overflow-hidden p-4 md:p-6 gap-6 z-10 relative">
+      <main className="flex-1 flex overflow-hidden lg:p-6 gap-6 z-10 relative">
         {/* Main Stage */}
-        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0">
-          <ParticipantStage />
+        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col">
+           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
+           <ParticipantStage />
         </div>
 
         {/* Sidebar (Desktop Only) */}
         <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4">
-          <div className="flex-1 glass-surface rounded-3xl overflow-hidden flex flex-col">
+          <div className="flex-1 glass-surface-heavy rounded-[2.5rem] overflow-hidden flex flex-col border border-white/5 shadow-3xl bg-[#090b14]/40">
             <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start rounded-none bg-white/5 border-b border-white/5 h-14 p-0 px-4 gap-6">
+              <TabsList className="w-full justify-start rounded-none bg-white/[0.02] border-b border-white/5 h-16 p-0 px-6 gap-8">
                 <TabsTrigger 
                   value="chat" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs font-bold uppercase tracking-widest text-slate-500 data-[state=active]:text-white shadow-none transition-all px-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
                 >
-                  Chat
+                  Messages
                 </TabsTrigger>
                 <TabsTrigger 
                   value="participants"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs font-bold uppercase tracking-widest text-slate-500 data-[state=active]:text-white shadow-none transition-all px-2"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
                 >
-                  Users
+                  Directory
                 </TabsTrigger>
               </TabsList>
               <div className="flex-1 overflow-hidden">
@@ -346,34 +369,39 @@ export default function Meeting({ session: _session }: MeetingProps) {
           </div>
         </aside>
 
-        {/* Mobile Overlays */}
-        {activeTab === 'chat' && (
-          <div className="fixed inset-0 z-50 lg:hidden glass-surface-heavy animate-in slide-in-from-bottom duration-300">
-            <div className="flex flex-col h-full pt-16">
-               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                  <h2 className="text-xl font-bold">Chat</h2>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')}><X /></Button>
+        {/* Mobile Overlays - Sliding Drawer Pattern */}
+        <AnimatePresence>
+          {activeTab && activeTab !== 'none' && (
+            <motion.div 
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-0 z-50 lg:hidden bg-[#050508] flex flex-col"
+            >
+               <div className="flex items-center justify-between px-6 h-16 border-b border-white/5 bg-black">
+                  <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                     {activeTab === 'chat' ? 'Secure Node Messages' : 'Node Directory'}
+                  </h2>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setActiveTab('none')}
+                    className="w-10 h-10 rounded-full hover:bg-white/10"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
                </div>
                <div className="flex-1 overflow-hidden">
-                <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
+                  {activeTab === 'chat' ? (
+                    <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
+                  ) : (
+                    <ParticipantsPanel isHost={isHost} />
+                  )}
                </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'participants' && (
-          <div className="fixed inset-0 z-50 lg:hidden glass-surface-heavy animate-in slide-in-from-bottom duration-300">
-             <div className="flex flex-col h-full pt-16">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                  <h2 className="text-xl font-bold">Participants</h2>
-                  <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')}><X /></Button>
-               </div>
-               <div className="flex-1 overflow-hidden">
-                <ParticipantsPanel isHost={isHost} />
-               </div>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <RoomAudioRenderer />

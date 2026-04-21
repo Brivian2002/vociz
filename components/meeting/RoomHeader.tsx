@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Video, Download } from 'lucide-react';
+import { Video, Download, Clock, Hash } from 'lucide-react';
+import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 export default function RoomHeader({ roomCode }: { roomCode: string }) {
   const [time, setTime] = useState(new Date());
@@ -10,30 +12,69 @@ export default function RoomHeader({ roomCode }: { roomCode: string }) {
   }, []);
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 backdrop-blur-md bg-white/5 border-b border-white/10 z-20">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-          <Video className="w-5 h-5 text-white" />
+    <header className="h-16 flex items-center justify-between px-6 backdrop-blur-xl bg-black/60 border-b border-white/5 z-20 shadow-2xl">
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 group px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-all cursor-pointer">
+          <div className="relative w-8 h-8 flex items-center justify-center">
+            {/* Circulating colors around the logo */}
+            <div className="absolute inset-[-4px]">
+               <motion.div
+                 animate={{ rotate: 360 }}
+                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                 className="w-full h-full rounded-full"
+                 style={{
+                   background: 'conic-gradient(from 0deg, #ffffff 0%, #fbbf24 45%, #ef4444 65%, #ffffff 100%)',
+                   maskImage: 'radial-gradient(circle, transparent 65%, black 70%)',
+                   WebkitMaskImage: 'radial-gradient(circle, transparent 65%, black 70%)',
+                 }}
+               />
+            </div>
+            <div className="relative z-10 w-7 h-7 bg-black rounded-lg flex items-center justify-center shadow-lg">
+              <Video className="w-4 h-4 text-white" />
+            </div>
+            
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse" />
+          </div>
+          <motion.span 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="font-black text-sm uppercase tracking-[0.2em] bg-gradient-to-r from-white via-white to-white/50 bg-clip-text text-transparent"
+          >
+            VoiceMeet
+          </motion.span>
         </div>
-        <span className="font-bold text-xl tracking-tight text-white">VoiceMeet</span>
-        <div className="ml-4 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-mono text-slate-400">
-          {roomCode}
+
+        {/* Meeting Code Placeholder - Blue Black Styled */}
+        <div className="hidden sm:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#090b14] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)] transition-all hover:border-blue-700/50 group">
+          <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+            <Hash className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
+          </div>
+          <span className="text-[11px] font-black text-blue-100 uppercase tracking-widest font-mono">
+            {roomCode?.toUpperCase()}
+          </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="text-right">
-          <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Current Time</div>
-          <div className="text-sm font-mono text-white">
-            {time.toLocaleTimeString('en-US', {
-              hour12: false,
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })} UTC
-          </div>
+      <div className="flex items-center gap-4">
+        {/* Time Placeholder - Blue Black Styled */}
+        <div className="hidden md:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#090b14] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]">
+           <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+             <Clock className="w-3.5 h-3.5 text-blue-400" />
+           </div>
+           <div className="flex flex-col text-right">
+              <span className="text-[7px] font-black text-blue-500/60 uppercase tracking-tighter leading-none mb-0.5">Global Link</span>
+              <span className="text-[11px] font-black text-white font-mono leading-none tracking-tight">
+                {time.toLocaleTimeString('en-US', {
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </span>
+           </div>
         </div>
-        <div className="h-8 w-[1px] bg-white/10"></div>
+
+        <div className="h-6 w-[1px] bg-white/5 hidden md:block"></div>
         <InstallPWAHeader />
       </div>
     </header>

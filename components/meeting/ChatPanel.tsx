@@ -23,6 +23,21 @@ interface Message {
 }
 
 export default function ChatPanel({ roomCode, displayName }: { roomCode: string, displayName: string }) {
+  if (!roomCode) {
+    return (
+       <div className="flex-1 flex items-center justify-center p-8 text-center bg-[#050508]">
+          <div className="space-y-4">
+             <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/5">
+                <Zap className="w-6 h-6 text-slate-700 animate-pulse" />
+             </div>
+             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                Waiting for node synchronization...
+             </p>
+          </div>
+       </div>
+    );
+  }
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
