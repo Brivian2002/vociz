@@ -10,6 +10,8 @@ import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
 import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { motion } from 'motion/react';
 
 interface MeetingProps {
   session: Session | null;
@@ -23,13 +25,15 @@ export default function Meeting({ session }: MeetingProps) {
   const [token, setToken] = useState<string | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isJoining, setIsJoining] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const displayName = searchParams.get('name') || session?.user?.user_metadata?.full_name || 'Guest';
 
   useEffect(() => {
-    const validateAndJoin = async () => {
+    const validateMeeting = async () => {
       if (!code) return;
 
       if (!isConfigured) {
@@ -60,48 +64,57 @@ export default function Meeting({ session }: MeetingProps) {
         }
 
         setIsHost(session?.user?.id === meeting.host_id);
-
-        // Try to get LiveKit token from our serverless or express endpoints
-        // Check standard paths for both local and deployed environments
-        const endpoints = ['/api/livekit-token', '/api/livekit/token'];
-        let res = null;
-        let lastError = '';
-
-        for (const endpoint of endpoints) {
-          try {
-            const attempt = await fetch(endpoint, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ room: code, identity: displayName }),
-            });
-            if (attempt.ok) {
-              res = attempt;
-              break;
-            } else {
-              const errBody = await attempt.json().catch(() => ({}));
-              lastError = errBody.error || `Error ${attempt.status}`;
-            }
-          } catch (e) {
-            lastError = 'Endpoint unreachable';
-          }
-        }
-
-        if (!res) throw new Error(lastError || 'Failed to get join token from server');
-
-        const { token } = await res.json();
-        setToken(token);
       } catch (err: any) {
-        console.error('Join error:', err);
+        console.error('Validation error:', err);
         setError('Connection failed');
-        setErrorDetails(err.message || 'Could not establish secure link to voice server.');
-        toast.error('Connection error: ' + (err.message || 'Failed to connect'));
+        setErrorDetails(err.message || 'Could not verify meeting details.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    validateAndJoin();
-  }, [code, session, displayName, navigate]);
+    validateMeeting();
+  }, [code, session, navigate]);
+
+  const handleJoin = async () => {
+    setIsJoining(true);
+    try {
+      // Try multiple endpoints for maximum compatibility (Local vs Vercel)
+      const endpoints = ['/api/token', '/api/livekit-token', '/api/livekit/token'];
+      let res = null;
+      let lastError = '';
+
+      for (const endpoint of endpoints) {
+        try {
+          const attempt = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ room: code, identity: displayName }),
+          });
+          if (attempt.ok) {
+            res = attempt;
+            break;
+          } else {
+            const errBody = await attempt.json().catch(() => ({}));
+            lastError = errBody.error || `Error ${attempt.status}`;
+          }
+        } catch (e) {
+          lastError = 'Endpoint unreachable';
+        }
+      }
+
+      if (!res) throw new Error(lastError || 'Failed to get join token from server');
+
+      const { token } = await res.json();
+      setToken(token);
+      setHasJoined(true);
+    } catch (err: any) {
+      console.error('Join error:', err);
+      toast.error('Connection failed: ' + (err.message || 'Could not connect to voice server'));
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -115,7 +128,7 @@ export default function Meeting({ session }: MeetingProps) {
           <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
             Initializing Link
           </h2>
-          <p className="text-slate-500 font-mono text-sm animate-pulse">ESTABLISHING TUNNEL: {code?.toUpperCase()}</p>
+          <p className="text-slate-500 font-mono text-sm animate-pulse">VERIFYING CODE: {code?.toUpperCase()}</p>
         </div>
       </div>
     );
@@ -146,17 +159,53 @@ export default function Meeting({ session }: MeetingProps) {
     );
   }
 
-  if (!token) {
+  if (!hasJoined) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-amber-600/10 blur-[120px] pointer-events-none" />
-        <div className="z-10 backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-12 max-w-md shadow-2xl space-y-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/50">
-            <ShieldAlert className="w-8 h-8 text-amber-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-white">Missing Token</h2>
-          <p className="text-slate-400">Your session could not be authenticated. Please try joining again.</p>
-          <button onClick={() => navigate('/')} className="w-full h-12 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl font-bold">Try Again</button>
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 overflow-hidden relative">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+        
+        <div className="z-10 w-full max-w-md space-y-8">
+          <RoomHeader roomCode={code!} />
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-10 shadow-2xl text-center space-y-8 mt-8"
+          >
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-white">Ready to join?</h1>
+              <p className="text-slate-400 font-medium tracking-tight">Meeting code: <span className="text-blue-400 font-mono">{code}</span></p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-4 py-8">
+                <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-xl uppercase">
+                  {displayName.slice(0, 2)}
+                </div>
+                <div className="space-y-1">
+                  <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Joining as</p>
+                  <p className="text-xl font-semibold text-white">{displayName}</p>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleJoin}
+                disabled={isJoining}
+                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20"
+              >
+                {isJoining ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Connecting...
+                  </div>
+                ) : 'Join Now'}
+              </Button>
+            </div>
+          </motion.div>
+
+          <p className="text-center text-slate-500 text-xs font-medium italic">
+            Make sure your microphone is ready.
+          </p>
         </div>
       </div>
     );
