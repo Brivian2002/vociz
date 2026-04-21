@@ -1,0 +1,216 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Session } from '@supabase/supabase-js';
+
+interface Message {
+  id: string;
+  meeting_code: string;
+  user_id: string | null;
+  display_name: string;
+  message: string;
+  attachments: any[];
+  created_at: string;
+}
+
+export default function ChatPanel({ roomCode, displayName, session }: { roomCode: string, displayName: string, session: Session | null }) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Initial fetch
+    const fetchMessages = async () => {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('meeting_code', roomCode)
+        .order('created_at', { ascending: true });
+      
+      if (!error && data) setMessages(data);
+    };
+
+    fetchMessages();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel(`chat:${roomCode}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
+        (payload) => {
+          setMessages((prev) => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomCode]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!newMessage.trim()) return;
+
+    const messageToSend = newMessage.trim();
+    setNewMessage('');
+
+    const { error } = await supabase.from('chat_messages').insert({
+      meeting_code: roomCode,
+      user_id: session?.user?.id || null,
+      display_name: displayName,
+      message: messageToSend,
+      attachments: [],
+    });
+
+    if (error) {
+      console.error('Error sending message:', error);
+      toast.error('Failed to send message');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large (max 5MB)');
+      return;
+    }
+
+    setIsUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `chat/${roomCode}/${fileName}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+
+      await supabase.from('chat_messages').insert({
+        meeting_code: roomCode,
+        user_id: session?.user?.id || null,
+        display_name: displayName,
+        message: '',
+        attachments: [{
+          name: file.name,
+          url: publicUrl,
+          type: file.type.startsWith('image/') ? 'image' : 'file'
+        }],
+      });
+
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage((prev) => prev + emojiData.emoji);
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-transparent overflow-hidden">
+      <div className="p-3 border-b border-white/10">
+        <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">In-call Messages</h3>
+      </div>
+
+      <ScrollArea className="flex-1 p-3" viewportRef={scrollRef}>
+        <div className="space-y-3">
+          {messages.map((msg) => {
+            const isMe = msg.display_name === displayName;
+            return (
+              <div key={msg.id} className="space-y-1">
+                <div className="flex justify-between items-baseline">
+                  <span className={cn("text-[10px] font-bold", isMe ? "text-slate-400" : "text-blue-400")}>
+                    {isMe ? 'Me' : msg.display_name}
+                  </span>
+                  <span className="text-[9px] text-slate-500">
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                
+                {msg.message && (
+                  <p className={cn(
+                    "text-xs p-2 rounded-lg rounded-tl-none border",
+                    isMe ? "bg-blue-500/10 border-blue-500/20 text-white/90" : "bg-white/5 border-white/5 text-slate-300"
+                  )}>
+                    {msg.message}
+                  </p>
+                )}
+
+                {msg.attachments?.map((att: any, i: number) => (
+                  <div key={i} className="mt-2">
+                    {att.type === 'image' ? (
+                      <img 
+                        src={att.url} 
+                        alt={att.name} 
+                        className="max-w-full rounded-lg border border-white/10 hover:border-primary/50 transition-colors cursor-pointer"
+                        referrerPolicy="no-referrer"
+                        onClick={() => window.open(att.url, '_blank')}
+                      />
+                    ) : (
+                      <div className="p-2 bg-blue-500/10 rounded-lg rounded-tl-none border border-blue-500/20">
+                         <div className="flex items-center gap-2">
+                           <div className="w-6 h-6 bg-blue-500/30 rounded flex items-center justify-center">
+                             <FileIcon className="w-3 h-3 text-white" />
+                           </div>
+                           <span className="text-[10px] truncate text-white/70">{att.name}</span>
+                         </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+
+      <div className="p-3 border-t border-white/10">
+        <form onSubmit={handleSendMessage} className="relative group">
+          <Input 
+            placeholder="Send a message..." 
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            className="w-full bg-white/5 border-white/10 rounded-xl px-3 py-2 text-xs focus-visible:ring-0 focus:outline-none focus:border-blue-500/50 pr-8"
+          />
+          <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-1">
+             <button type="button" onClick={() => fileInputRef.current?.click()} className="text-white/30 hover:text-white/50">
+                <Paperclip className="w-3 h-3" />
+             </button>
+          </div>
+          <button type="submit" className="absolute right-2 top-1.5 text-blue-500 hover:text-blue-400 disabled:opacity-30" disabled={!newMessage.trim()}>
+            ➤
+          </button>
+          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,8 @@
+{
+  "name": "VoiceMeet",
+  "description": "A lightweight, audio-only conferencing web app with real-time chat and host controls.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
