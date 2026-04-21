@@ -9,7 +9,7 @@ import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
 import ParticipantStage from '@/components/meeting/ParticipantStage';
-import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,12 +60,16 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const navigate = useNavigate();
   
   const [token, setToken] = useState<string | null>(null);
+  const [liveKitUrl, setLiveKitUrl] = useState<string>(import.meta.env.VITE_LIVEKIT_URL || '');
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
+
+  // Responsive state
+  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
 
   const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
   const isCreator = searchParams.get('host') === 'true';
@@ -100,7 +104,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
         if (fetchError) {
           console.warn('Supabase fetch notice (ignoring):', fetchError);
-          // Don't throw, just allow joining if DB is acting up
         }
 
         // Host is either the creator (from URL) or the DB record says so
@@ -114,7 +117,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
     };
 
     validateMeeting();
-  }, [code, navigate]);
+  }, [code, navigate, _session?.user?.id]);
 
   const handleJoin = async () => {
     setIsJoining(true);
@@ -158,9 +161,14 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       const data = await res.json();
       const joinToken = data.token || data; // Handle different API response shapes
-      
+      const returnedUrl = data.url || data.serverUrl; // Some backends return the URL
+
       if (typeof joinToken !== 'string') {
         throw new Error('Invalid token format received from server');
+      }
+
+      if (returnedUrl) {
+        setLiveKitUrl(returnedUrl);
       }
 
       setToken(joinToken);
@@ -175,7 +183,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center gap-6 overflow-hidden relative">
+      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center gap-6 overflow-hidden relative">
         <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none" />
         <div className="relative">
           <div className="w-24 h-24 border-4 border-blue-500/10 rounded-full" />
@@ -185,7 +193,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
           <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
             Initializing Link
           </h2>
-          <p className="text-slate-500 font-mono text-sm animate-pulse">VERIFYING CODE: {code?.toUpperCase()}</p>
+          <p className="text-slate-500 font-mono text-sm animate-pulse">ESTABLISHING ENCRYPTED CONNECTION: {code?.toUpperCase()}</p>
         </div>
       </div>
     );
@@ -193,9 +201,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 text-center overflow-hidden relative">
+      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 text-center overflow-hidden relative">
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[120px] pointer-events-none" />
-        <div className="z-10 backdrop-blur-xl bg-white/5 rounded-3xl border border-red-500/30 p-12 max-w-md shadow-2xl space-y-6">
+        <div className="z-10 glass-surface-heavy rounded-3xl p-12 max-w-md shadow-2xl space-y-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/50">
             <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
@@ -218,8 +226,8 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
   if (!hasJoined) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 overflow-hidden relative">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 overflow-hidden relative">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none" />
         
         <div className="z-10 w-full max-w-md space-y-8">
           <RoomHeader roomCode={code!} />
@@ -227,16 +235,16 @@ export default function Meeting({ session: _session }: MeetingProps) {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-10 shadow-2xl text-center space-y-8 mt-8"
+            className="glass-surface rounded-3xl p-10 shadow-2xl text-center space-y-8 mt-8 border border-white/10"
           >
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-white">Ready to join?</h1>
-              <p className="text-slate-400 font-medium tracking-tight">Meeting code: <span className="text-blue-400 font-mono">{code}</span></p>
+              <h1 className="text-3xl font-bold text-white tracking-tight">Ready to join?</h1>
+              <p className="text-slate-400 font-medium">Room Code: <span className="text-blue-400 font-mono font-bold">{code}</span></p>
             </div>
 
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-4 py-8">
-                <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-xl uppercase transition-all">
+                <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-2xl uppercase transition-all">
                   {displayName ? displayName.slice(0, 2) : '?'}
                 </div>
                 <div className="space-y-3 w-full">
@@ -246,7 +254,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                       placeholder="Who are you?" 
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 text-center"
+                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 text-center font-medium focus:ring-blue-500/50"
                     />
                   </div>
                 </div>
@@ -255,20 +263,20 @@ export default function Meeting({ session: _session }: MeetingProps) {
               <Button 
                 onClick={handleJoin}
                 disabled={isJoining || !displayName.trim()}
-                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20"
+                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all"
               >
                 {isJoining ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Connecting...
+                    Establishing Link...
                   </div>
-                ) : 'Join Now'}
+                ) : 'Join Meeting'}
               </Button>
             </div>
           </motion.div>
 
-          <p className="text-center text-slate-500 text-xs font-medium italic">
-            Make sure your microphone is ready.
+          <p className="text-center text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">
+            Secured end-to-end voice link
           </p>
         </div>
       </div>
@@ -280,35 +288,36 @@ export default function Meeting({ session: _session }: MeetingProps) {
       video={false}
       audio={true}
       token={token!}
-      serverUrl={import.meta.env.VITE_LIVEKIT_URL}
+      serverUrl={liveKitUrl}
       connect={true}
-      className="flex flex-col h-screen bg-[#0a0a0f] text-slate-100 font-sans overflow-hidden relative"
+      className="flex flex-col h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative"
     >
-      {/* Background Mesh Gradient Decor */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none z-0"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/20 blur-[120px] pointer-events-none z-0"></div>
-      <div className="absolute top-[30%] left-[40%] w-[30%] h-[30%] rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none z-0"></div>
+      {/* Immersive Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none z-0"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none z-0"></div>
 
       <RoomHeader roomCode={code!} />
 
-      <main className="flex-1 flex overflow-hidden p-6 gap-6 z-10">
-        {/* Main Stage (Participant Stage) */}
-        <ParticipantStage />
+      <main className="flex-1 flex overflow-hidden p-4 md:p-6 gap-6 z-10 relative">
+        {/* Main Stage */}
+        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0">
+          <ParticipantStage />
+        </div>
 
-        {/* Sidebar: Chat & Participants */}
-        <aside className="w-80 flex flex-col gap-4">
-          <div className="flex-1 backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 flex flex-col overflow-hidden">
+        {/* Sidebar (Desktop Only) */}
+        <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4">
+          <div className="flex-1 glass-surface rounded-3xl overflow-hidden flex flex-col">
             <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start rounded-none bg-transparent border-b border-white/10 h-12 p-0 px-4 gap-4">
+              <TabsList className="w-full justify-start rounded-none bg-white/5 border-b border-white/5 h-14 p-0 px-4 gap-6">
                 <TabsTrigger 
                   value="chat" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-400 data-[state=active]:text-white shadow-none"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs font-bold uppercase tracking-widest text-slate-500 data-[state=active]:text-white shadow-none transition-all px-2"
                 >
                   Chat
                 </TabsTrigger>
                 <TabsTrigger 
                   value="participants"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-400 data-[state=active]:text-white shadow-none"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-xs font-bold uppercase tracking-widest text-slate-500 data-[state=active]:text-white shadow-none transition-all px-2"
                 >
                   Users
                 </TabsTrigger>
@@ -324,10 +333,43 @@ export default function Meeting({ session: _session }: MeetingProps) {
             </Tabs>
           </div>
         </aside>
+
+        {/* Mobile Overlays */}
+        {activeTab === 'chat' && (
+          <div className="fixed inset-0 z-50 lg:hidden glass-surface-heavy animate-in slide-in-from-bottom duration-300">
+            <div className="flex flex-col h-full pt-16">
+               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                  <h2 className="text-xl font-bold">Chat</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')}><X /></Button>
+               </div>
+               <div className="flex-1 overflow-hidden">
+                <ChatPanel roomCode={code!} displayName={displayName} />
+               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'participants' && (
+          <div className="fixed inset-0 z-50 lg:hidden glass-surface-heavy animate-in slide-in-from-bottom duration-300">
+             <div className="flex flex-col h-full pt-16">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                  <h2 className="text-xl font-bold">Participants</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')}><X /></Button>
+               </div>
+               <div className="flex-1 overflow-hidden">
+                <ParticipantsPanel isHost={isHost} />
+               </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <RoomAudioRenderer />
-      <AudioControlBar isHost={isHost} />
+      <AudioControlBar 
+        isHost={isHost} 
+        onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)}
+        activeTab={activeTab}
+      />
       <RoomEventListener />
     </LiveKitRoom>
   );
