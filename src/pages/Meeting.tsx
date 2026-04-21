@@ -74,8 +74,13 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const handleJoin = async () => {
     setIsJoining(true);
     try {
-      // Try multiple endpoints for maximum compatibility (Local vs Vercel)
-      const endpoints = ['/api/token', '/api/livekit-token', '/api/livekit/token'];
+      // Prioritize the external Render backend provided by the user
+      const endpoints = [
+        'https://vociz.onrender.com/api/token',
+        'https://vociz.onrender.com/token',
+        '/api/token', 
+        '/api/livekit/token'
+      ];
       let res = null;
       let lastError = '';
 
@@ -91,17 +96,23 @@ export default function Meeting({ session: _session }: MeetingProps) {
             break;
           } else {
             const errBody = await attempt.json().catch(() => ({}));
-            lastError = errBody.error || `Error ${attempt.status}`;
+            lastError = errBody.error || `Error ${attempt.status} from ${endpoint}`;
           }
         } catch (e) {
-          lastError = 'Endpoint unreachable';
+          lastError = `Endpoint ${endpoint} unreachable`;
         }
       }
 
       if (!res) throw new Error(lastError || 'Failed to get join token from server');
 
-      const { token } = await res.json();
-      setToken(token);
+      const data = await res.json();
+      const joinToken = data.token || data; // Handle different API response shapes
+      
+      if (typeof joinToken !== 'string') {
+        throw new Error('Invalid token format received from server');
+      }
+
+      setToken(joinToken);
       setHasJoined(true);
     } catch (err: any) {
       console.error('Join error:', err);
