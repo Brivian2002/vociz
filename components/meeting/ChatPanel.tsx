@@ -8,7 +8,6 @@ import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon } from 'lu
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Session } from '@supabase/supabase-js';
 
 interface Message {
   id: string;
@@ -216,22 +215,51 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
         </div>
       </ScrollArea>
 
-      <div className="p-3 border-t border-white/10">
-        <form onSubmit={handleSendMessage} className="relative group">
-          <Input 
-            placeholder="Send a message..." 
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            className="w-full bg-white/5 border-white/10 rounded-xl px-3 py-2 text-xs focus-visible:ring-0 focus:outline-none focus:border-blue-500/50 pr-8"
-          />
-          <div className="absolute right-8 top-1/2 -translate-y-1/2 flex items-center gap-1">
-             <button type="button" onClick={() => fileInputRef.current?.click()} className="text-white/30 hover:text-white/50">
-                <Paperclip className="w-3 h-3" />
-             </button>
+      <div className="p-3 border-t border-white/10 bg-white/5 backdrop-blur-sm">
+        <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 group">
+              <Input 
+                placeholder="Send a message..." 
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                className="w-full bg-black/40 border-white/10 rounded-xl px-3 py-2 text-xs focus-visible:ring-1 focus-visible:ring-blue-500/50 transition-all pr-20 h-10"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="text-white/40 hover:text-white/70 transition-colors p-1">
+                      <Smile className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 border-none bg-transparent shadow-none" side="top" align="end">
+                    <EmojiPicker 
+                      onEmojiClick={onEmojiClick}
+                      theme={Theme.DARK}
+                      lazyLoadEmojis={true}
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="text-white/40 hover:text-white/70 transition-colors p-1"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              disabled={!newMessage.trim()}
+              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-10 px-4 flex items-center gap-2 border-none shadow-lg shadow-blue-600/20 disabled:opacity-50 transition-all font-bold group"
+            >
+              <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline">Send</span>
+            </Button>
           </div>
-          <button type="submit" className="absolute right-2 top-1.5 text-blue-500 hover:text-blue-400 disabled:opacity-30" disabled={!newMessage.trim()}>
-            ➤
-          </button>
           <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
         </form>
       </div>
