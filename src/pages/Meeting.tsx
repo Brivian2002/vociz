@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isConfigured } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import RoomHeader from '@/components/meeting/RoomHeader';
 import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface MeetingProps {
@@ -24,6 +24,7 @@ export default function Meeting({ session }: MeetingProps) {
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
   const displayName = searchParams.get('name') || session?.user?.user_metadata?.full_name || 'Guest';
 
@@ -31,15 +32,27 @@ export default function Meeting({ session }: MeetingProps) {
     const validateAndJoin = async () => {
       if (!code) return;
 
+      if (!isConfigured) {
+        setError('Configuration Missing');
+        setErrorDetails('Supabase environment variables are not set. Check the Secrets sidebar.');
+        setIsLoading(false);
+        return;
+      }
+
       try {
         // Validate meeting exists
         const { data: meeting, error: fetchError } = await supabase
           .from('meetings')
           .select('*')
           .eq('code', code)
-          .single();
+          .maybeSingle();
 
-        if (fetchError || !meeting) {
+        if (fetchError) {
+          console.error('Supabase fetch error:', fetchError);
+          throw new Error('Database connection failed');
+        }
+
+        if (!meeting) {
           setError('Meeting not found');
           toast.error('This meeting code does not exist.');
           setTimeout(() => navigate('/'), 3000);
@@ -48,24 +61,40 @@ export default function Meeting({ session }: MeetingProps) {
 
         setIsHost(session?.user?.id === meeting.host_id);
 
-        // Get LiveKit token from our server
-        const res = await fetch('/api/livekit/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            room: code, 
-            identity: displayName 
-          }),
-        });
+        // Try to get LiveKit token from our serverless or express endpoints
+        // Check standard paths for both local and deployed environments
+        const endpoints = ['/api/livekit-token', '/api/livekit/token'];
+        let res = null;
+        let lastError = '';
 
-        if (!res.ok) throw new Error('Failed to get join token');
+        for (const endpoint of endpoints) {
+          try {
+            const attempt = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ room: code, identity: displayName }),
+            });
+            if (attempt.ok) {
+              res = attempt;
+              break;
+            } else {
+              const errBody = await attempt.json().catch(() => ({}));
+              lastError = errBody.error || `Error ${attempt.status}`;
+            }
+          } catch (e) {
+            lastError = 'Endpoint unreachable';
+          }
+        }
+
+        if (!res) throw new Error(lastError || 'Failed to get join token from server');
 
         const { token } = await res.json();
         setToken(token);
       } catch (err: any) {
         console.error('Join error:', err);
         setError('Connection failed');
-        toast.error('Could not connect to the voice server.');
+        setErrorDetails(err.message || 'Could not establish secure link to voice server.');
+        toast.error('Connection error: ' + (err.message || 'Failed to connect'));
       } finally {
         setIsLoading(false);
       }
@@ -76,16 +105,17 @@ export default function Meeting({ session }: MeetingProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6">
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center gap-6 overflow-hidden relative">
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none" />
         <div className="relative">
-          <div className="w-24 h-24 border-4 border-primary/20 rounded-full" />
-          <Loader2 className="w-24 h-24 text-primary animate-spin absolute top-0" />
+          <div className="w-24 h-24 border-4 border-blue-500/10 rounded-full" />
+          <Loader2 className="w-24 h-24 text-blue-500 animate-spin absolute top-0" />
         </div>
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 z-10">
           <h2 className="text-2xl font-bold text-white uppercase tracking-widest font-mono">
             Initializing Link
           </h2>
-          <p className="text-white/40 font-mono text-sm">SECURE TUNNEL: {code?.toUpperCase()}</p>
+          <p className="text-slate-500 font-mono text-sm animate-pulse">ESTABLISHING TUNNEL: {code?.toUpperCase()}</p>
         </div>
       </div>
     );
@@ -93,20 +123,41 @@ export default function Meeting({ session }: MeetingProps) {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
-        <div className="p-4 bg-red-500/10 rounded-full mb-6">
-          <div className="w-12 h-12 text-red-500 flex items-center justify-center text-4xl font-bold">!</div>
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 text-center overflow-hidden relative">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[120px] pointer-events-none" />
+        <div className="z-10 backdrop-blur-xl bg-white/5 rounded-3xl border border-red-500/30 p-12 max-w-md shadow-2xl space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/50">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold text-white tracking-tight">{error}</h2>
+            <p className="text-slate-400 leading-relaxed font-medium">
+              {errorDetails || "We couldn't get you into the room. Please check the code and your configuration."}
+            </p>
+          </div>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full h-12 bg-white text-black hover:bg-slate-200 rounded-xl font-bold transition-all"
+          >
+            Return to Base
+          </button>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">{error}</h2>
-        <p className="text-white/50 mb-8 max-w-sm">
-          We couldn't get you into the room. Please check the code and your connection.
-        </p>
-        <button 
-          onClick={() => navigate('/')}
-          className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors border border-white/10 font-bold tracking-tight"
-        >
-          Return to Base
-        </button>
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-amber-600/10 blur-[120px] pointer-events-none" />
+        <div className="z-10 backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-12 max-w-md shadow-2xl space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-500/50">
+            <ShieldAlert className="w-8 h-8 text-amber-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Missing Token</h2>
+          <p className="text-slate-400">Your session could not be authenticated. Please try joining again.</p>
+          <button onClick={() => navigate('/')} className="w-full h-12 bg-white/10 hover:bg-white/20 border border-white/10 text-white rounded-xl font-bold">Try Again</button>
+        </div>
       </div>
     );
   }
