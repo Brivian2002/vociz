@@ -1,16 +1,17 @@
 import { AccessToken } from "livekit-server-sdk";
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { room, identity } = req.body;
+  const { room, identity, isHost } = req.body;
 
   if (!room || !identity) {
     return res.status(400).json({ error: "Missing room or identity" });
   }
-
+  
   const apiKey = process.env.LIVEKIT_API_KEY;
   const apiSecret = process.env.LIVEKIT_API_SECRET;
 
@@ -28,10 +29,12 @@ export default async function handler(req: any, res: any) {
       room,
       canPublish: true,
       canSubscribe: true,
+      roomAdmin: !!isHost,
     });
 
     const token = await at.toJwt();
-    res.status(200).json({ token });
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).send(JSON.stringify({ token }));
   } catch (error) {
     console.error("LiveKit token generation error:", error);
     res.status(500).json({ error: "Failed to generate token" });
