@@ -82,8 +82,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const handleJoin = async () => {
     setIsJoining(true);
     try {
-      // Prioritize the external Render backend provided by the user
+      // Prioritize the external backends provided by the user
       const endpoints = [
+        'https://voicecalls.vercel.app/api/token',
         'https://vociz.onrender.com/api/token',
         'https://vociz.onrender.com/token',
         '/api/token', 
