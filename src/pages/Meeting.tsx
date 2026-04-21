@@ -30,8 +30,16 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
-  const displayName = searchParams.get('name') || 'Guest';
+  const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
   const isCreator = searchParams.get('host') === 'true';
+
+  useEffect(() => {
+    // Sync URL name to state once
+    const nameFromUrl = searchParams.get('name');
+    if (nameFromUrl && !displayName) {
+      setDisplayName(nameFromUrl);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const validateMeeting = async () => {
@@ -185,18 +193,25 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-4 py-8">
-                <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-xl uppercase">
-                  {displayName.slice(0, 2)}
+                <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-xl uppercase transition-all">
+                  {displayName ? displayName.slice(0, 2) : '?'}
                 </div>
-                <div className="space-y-1">
-                  <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest">Joining as</p>
-                  <p className="text-xl font-semibold text-white">{displayName}</p>
+                <div className="space-y-3 w-full">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Identity</label>
+                    <Input 
+                      placeholder="Who are you?" 
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600 text-center"
+                    />
+                  </div>
                 </div>
               </div>
 
               <Button 
                 onClick={handleJoin}
-                disabled={isJoining}
+                disabled={isJoining || !displayName.trim()}
                 className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20"
               >
                 {isJoining ? (

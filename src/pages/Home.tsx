@@ -60,12 +60,16 @@ export default function Home({ session }: HomeProps) {
   };
 
   const handleCreateMeeting = async () => {
+    if (!displayName.trim()) {
+      toast.error('Identity required', { description: 'Please enter your name before starting a meeting.' });
+      return;
+    }
+
     setIsCreating(true);
     const code = nanoid(10);
     
     try {
       // Try to save to DB, but don't block if it fails or if user is anonymous
-      // This is "smarter" WebRTC - the code itself is the room credential
       if (isConfigured) {
         await supabase
           .from('meetings')
@@ -75,12 +79,11 @@ export default function Home({ session }: HomeProps) {
           });
       }
       
-      const hostParam = `&host=true${displayName ? '' : '?'}`;
-      navigate(`/meet/${code}${displayName ? `?name=${encodeURIComponent(displayName)}` : ''}&host=true`);
+      navigate(`/meet/${code}?name=${encodeURIComponent(displayName)}&host=true`);
     } catch (error: any) {
       console.warn('Meeting creation DB notice:', error);
       // Still navigate even if DB save fails - the room exists in LiveKit dynamically
-      navigate(`/meet/${code}${displayName ? `?name=${encodeURIComponent(displayName)}` : ''}&host=true`);
+      navigate(`/meet/${code}?name=${encodeURIComponent(displayName)}&host=true`);
     } finally {
       setIsCreating(false);
     }
