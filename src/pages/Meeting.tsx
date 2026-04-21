@@ -68,6 +68,8 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
 
+  const normalizedCode = code?.trim().toLowerCase();
+
   // Responsive state
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
 
@@ -84,7 +86,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
   useEffect(() => {
     const validateMeeting = async () => {
-      if (!code) return;
+      if (!normalizedCode) return;
 
       // If Supabase isn't configured, we skip DB validation and trust the room code
       if (!isConfigured) {
@@ -99,7 +101,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
         const { data: meeting, error: fetchError } = await supabase
           .from('meetings')
           .select('*')
-          .eq('code', code)
+          .eq('code', normalizedCode)
           .maybeSingle();
 
         if (fetchError) {
@@ -122,14 +124,14 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const handleJoin = async () => {
     setIsJoining(true);
     try {
-      // Prioritize the external backends provided by the user
+      const roomToJoin = normalizedCode;
+      
+      // Prioritize the local backend first to ensure consistency in the same environment
       const endpoints = [
+        '/api/livekit/token', 
+        '/api/token',
         'https://vociz-47v8.onrender.com/api/token',
-        'https://vociz-47v8.onrender.com/token',
-        'https://voicecalls.vercel.app/api/token',
-        'https://vociz.onrender.com/api/token',
-        '/api/token', 
-        '/api/livekit/token'
+        'https://vociz.onrender.com/api/token'
       ];
       let res = null;
       let lastError = '';
@@ -140,13 +142,14 @@ export default function Meeting({ session: _session }: MeetingProps) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              room: code, 
+              room: roomToJoin, 
               identity: displayName,
               isHost: isHost // Pass host status to backend
             }),
           });
           if (attempt.ok) {
             res = attempt;
+            console.log(`Connected via API: ${endpoint}`);
             break;
           } else {
             const errBody = await attempt.json().catch(() => ({}));
@@ -169,7 +172,12 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       if (returnedUrl) {
         setLiveKitUrl(returnedUrl);
+        console.log(`Using LiveKit Server: ${returnedUrl}`);
       }
+      
+      toast.success('Bridge Established', { 
+        description: `Connected to room ${roomToJoin} on ${returnedUrl || liveKitUrl || 'default cluster'}` 
+      });
 
       setToken(joinToken);
       setHasJoined(true);
@@ -296,7 +304,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none z-0"></div>
 
-      <RoomHeader roomCode={code!} />
+      <RoomHeader roomCode={normalizedCode!} />
 
       <main className="flex-1 flex overflow-hidden p-4 md:p-6 gap-6 z-10 relative">
         {/* Main Stage */}
@@ -324,7 +332,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
               </TabsList>
               <div className="flex-1 overflow-hidden">
                 <TabsContent value="chat" className="h-full m-0">
-                  <ChatPanel roomCode={code!} displayName={displayName} />
+                  <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
                 </TabsContent>
                 <TabsContent value="participants" className="h-full m-0">
                   <ParticipantsPanel isHost={isHost} />
@@ -343,7 +351,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')}><X /></Button>
                </div>
                <div className="flex-1 overflow-hidden">
-                <ChatPanel roomCode={code!} displayName={displayName} />
+                <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
                </div>
             </div>
           </div>

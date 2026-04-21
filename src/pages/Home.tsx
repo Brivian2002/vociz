@@ -66,7 +66,7 @@ export default function Home({ session }: HomeProps) {
     }
 
     setIsCreating(true);
-    const code = nanoid(10);
+    const code = nanoid(10).toLowerCase();
     
     try {
       // Try to save to DB, but don't block if it fails or if user is anonymous
@@ -99,7 +99,7 @@ export default function Home({ session }: HomeProps) {
       toast.error('Please enter your name');
       return;
     }
-    navigate(`/meet/${meetingCode.trim()}?name=${encodeURIComponent(displayName)}`);
+    navigate(`/meet/${meetingCode.trim().toLowerCase()}?name=${encodeURIComponent(displayName)}`);
   };
 
   return (

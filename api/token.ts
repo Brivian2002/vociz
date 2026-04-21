@@ -34,7 +34,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const token = await at.toJwt();
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).send(JSON.stringify({ token }));
+    res.status(200).send(JSON.stringify({ 
+      token, 
+      url: process.env.VITE_LIVEKIT_URL || process.env.LIVEKIT_URL 
+    }));
   } catch (error) {
     console.error("LiveKit token generation error:", error);
     res.status(500).json({ error: "Failed to generate token" });

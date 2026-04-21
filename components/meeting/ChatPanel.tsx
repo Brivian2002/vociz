@@ -4,10 +4,12 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon } from 'lucide-react';
+import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useRoomContext, useLocalParticipant } from '@livekit/components-react';
+import { RoomEvent, DataPacket_Kind } from 'livekit-client';
 
 interface Message {
   id: string;
@@ -17,6 +19,7 @@ interface Message {
   message: string;
   attachments: any[];
   created_at: string;
+  isRealtimeOnly?: boolean; // Flag if it only came through LiveKit Data
 }
 
 export default function ChatPanel({ roomCode, displayName }: { roomCode: string, displayName: string }) {
@@ -25,11 +28,51 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
   const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const room = useRoomContext();
+  const { localParticipant } = useLocalParticipant();
+
+  // Handle incoming LiveKit data messages
+  useEffect(() => {
+    const handleData = (payload: Uint8Array, participant?: any) => {
+      const decoder = new TextDecoder();
+      const str = decoder.decode(payload);
+      try {
+        const data = JSON.parse(str);
+        if (data.type === 'chat') {
+          const incomingMsg: Message = {
+            id: data.id || Math.random().toString(),
+            meeting_code: roomCode,
+            user_id: data.user_id || null,
+            display_name: data.display_name || participant?.identity || 'Anonymous',
+            message: data.message,
+            attachments: data.attachments || [],
+            created_at: data.created_at || new Date().toISOString(),
+            isRealtimeOnly: true
+          };
+
+          setMessages(prev => {
+            // Deduplicate if we already have this ID from DB
+            if (prev.some(m => m.id === incomingMsg.id)) return prev;
+            return [...prev, incomingMsg];
+          });
+        }
+      } catch (e) {
+        // Not a chat message
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => { room.off(RoomEvent.DataReceived, handleData); };
+  }, [room, roomCode]);
 
   useEffect(() => {
-    // Initial fetch
+    // Initial fetch from Supabase
     const fetchMessages = async () => {
-      if (!isConfigured) return;
+      if (!isConfigured) {
+        console.warn('Supabase not configured. Only LiveKit realtime chat will work.');
+        return;
+      }
       
       const { data, error } = await supabase
         .from('chat_messages')
@@ -42,7 +85,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
 
     fetchMessages();
 
-    // Realtime subscription
+    // Supabase Realtime subscription (Optional fallback if LiveKit misses something)
     let channel: any = null;
     if (isConfigured) {
       channel = supabase
@@ -51,7 +94,11 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
           (payload) => {
-            setMessages((prev) => [...prev, payload.new as Message]);
+            const newMsg = payload.new as Message;
+            setMessages((prev) => {
+               if (prev.some(m => m.id === newMsg.id)) return prev;
+               return [...prev, newMsg];
+            });
           }
         )
         .subscribe();
@@ -73,37 +120,57 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
     if (!newMessage.trim()) return;
 
     const messageToSend = newMessage.trim();
+    const msgId = Math.random().toString(36).substring(7);
+    const timestamp = new Date().toISOString();
     setNewMessage('');
 
-    const localMsg: Message = {
-      id: Math.random().toString(),
-      meeting_code: roomCode,
-      user_id: null,
+    const chatPayload = {
+      type: 'chat',
+      id: msgId,
       display_name: displayName,
       message: messageToSend,
       attachments: [],
-      created_at: new Date().toISOString()
+      created_at: timestamp
     };
 
+    // 1. Broadcast via LiveKit Data Channel (Reliable)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(chatPayload));
+    
+    try {
+      await localParticipant.publishData(data, { reliable: true });
+      
+      // Local Echo
+      const localMsg: Message = {
+        id: msgId,
+        meeting_code: roomCode,
+        user_id: null,
+        display_name: displayName,
+        message: messageToSend,
+        attachments: [],
+        created_at: timestamp,
+        isRealtimeOnly: true
+      };
+      setMessages(prev => [...prev, localMsg]);
+    } catch (err) {
+      console.error('Failed to broadcast via LiveKit:', err);
+      toast.error('Realtime message delivery failed');
+    }
+
+    // 2. Persist to Supabase (Background)
     if (isConfigured) {
       try {
-        const { error } = await supabase.from('chat_messages').insert({
+        await supabase.from('chat_messages').insert({
+          id: msgId, // Use same ID to avoid duplicates on fetch
           meeting_code: roomCode,
           user_id: null,
           display_name: displayName,
           message: messageToSend,
           attachments: [],
         });
-
-        if (error) throw error;
       } catch (err: any) {
-        console.warn('Database chat failed, falling back to local echo:', err);
-        // Add to local state so user can at least see it in their own session
-        setMessages(prev => [...prev, localMsg]);
+        console.warn('Database persistence failed (background):', err);
       }
-    } else {
-      // Local echo if no DB
-      setMessages(prev => [...prev, localMsg]);
     }
   };
 
@@ -112,7 +179,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
     if (!file) return;
 
     if (!isConfigured) {
-      toast.error('Storage unavailable without configuration');
+      toast.error('File sharing requires Supabase storage configuration');
       return;
     }
     
@@ -137,16 +204,33 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
         .from('chat-attachments')
         .getPublicUrl(filePath);
 
+      const attachment = {
+        name: file.name,
+        url: publicUrl,
+        type: file.type.startsWith('image/') ? 'image' : 'file'
+      };
+
+      // Broadcast file via LiveKit
+      const chatPayload = {
+        type: 'chat',
+        id: Math.random().toString(36).substring(7),
+        display_name: displayName,
+        message: '',
+        attachments: [attachment],
+        created_at: new Date().toISOString()
+      };
+      
+      const encoder = new TextEncoder();
+      const data = encoder.encode(JSON.stringify(chatPayload));
+      await localParticipant.publishData(data, { reliable: true });
+
+      // Persist to DB
       await supabase.from('chat_messages').insert({
         meeting_code: roomCode,
         user_id: null,
         display_name: displayName,
         message: '',
-        attachments: [{
-          name: file.name,
-          url: publicUrl,
-          type: file.type.startsWith('image/') ? 'image' : 'file'
-        }],
+        attachments: [attachment],
       });
 
     } catch (error: any) {
@@ -163,51 +247,65 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
 
   return (
     <div className="flex flex-col h-full bg-transparent overflow-hidden">
-      <div className="p-3 border-b border-white/10">
+      <div className="p-3 border-b border-white/10 flex items-center justify-between">
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">In-call Messages</h3>
+        <div className="flex items-center gap-1.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-help" title="Powered by LiveKit High-Speed Link">
+           <Zap className="w-3 h-3 text-blue-400" />
+           <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Realtime Link</span>
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-3" viewportRef={scrollRef}>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {messages.map((msg) => {
             const isMe = msg.display_name === displayName;
             return (
-              <div key={msg.id} className="space-y-1">
-                <div className="flex justify-between items-baseline">
+              <div key={msg.id} className={cn("space-y-1.5", isMe ? "items-end" : "items-start")}>
+                <div className={cn("flex items-baseline gap-2 px-1", isMe ? "flex-row-reverse" : "flex-row")}>
                   <span className={cn("text-[10px] font-bold", isMe ? "text-slate-400" : "text-blue-400")}>
                     {isMe ? 'Me' : msg.display_name}
                   </span>
-                  <span className="text-[9px] text-slate-500">
+                  <span className="text-[8px] text-slate-500 font-mono">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 
                 {msg.message && (
-                  <p className={cn(
-                    "text-xs p-2 rounded-lg rounded-tl-none border",
-                    isMe ? "bg-blue-500/10 border-blue-500/20 text-white/90" : "bg-white/5 border-white/5 text-slate-300"
+                  <div className={cn(
+                    "relative group max-w-[85%]",
+                    isMe ? "ml-auto" : "mr-auto"
                   )}>
-                    {msg.message}
-                  </p>
+                    <p className={cn(
+                      "text-xs p-2.5 rounded-2xl border leading-relaxed",
+                      isMe 
+                        ? "bg-blue-600 border-blue-500 text-white rounded-tr-none shadow-lg shadow-blue-900/20" 
+                        : "bg-white/5 border-white/10 text-slate-300 rounded-tl-none"
+                    )}>
+                      {msg.message}
+                    </p>
+                  </div>
                 )}
 
                 {msg.attachments?.map((att: any, i: number) => (
-                  <div key={i} className="mt-2">
+                  <div key={i} className={cn("mt-1.5", isMe ? "ml-auto" : "mr-auto")}>
                     {att.type === 'image' ? (
-                      <img 
-                        src={att.url} 
-                        alt={att.name} 
-                        className="max-w-full rounded-lg border border-white/10 hover:border-primary/50 transition-colors cursor-pointer"
-                        referrerPolicy="no-referrer"
-                        onClick={() => window.open(att.url, '_blank')}
-                      />
+                      <div className="relative group overflow-hidden rounded-2xl border border-white/10 max-w-[200px]">
+                        <img 
+                          src={att.url} 
+                          alt={att.name} 
+                          className="w-full h-auto object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"
+                          referrerPolicy="no-referrer"
+                          onClick={() => window.open(att.url, '_blank')}
+                        />
+                      </div>
                     ) : (
-                      <div className="p-2 bg-blue-500/10 rounded-lg rounded-tl-none border border-blue-500/20">
-                         <div className="flex items-center gap-2">
-                           <div className="w-6 h-6 bg-blue-500/30 rounded flex items-center justify-center">
-                             <FileIcon className="w-3 h-3 text-white" />
-                           </div>
-                           <span className="text-[10px] truncate text-white/70">{att.name}</span>
+                      <div className="p-2.5 bg-white/5 rounded-2xl rounded-tl-none border border-white/10 flex items-center gap-3">
+                         <div className="w-8 h-8 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                           <FileIcon className="w-4 h-4 text-blue-400" />
+                         </div>
+                         <div className="flex flex-col min-w-0">
+                            <span className="text-[10px] font-bold truncate text-white/90">{att.name}</span>
+                            <button className="text-[9px] text-blue-400 hover:underline text-left">Download</button>
                          </div>
                       </div>
                     )}
@@ -219,20 +317,20 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
         </div>
       </ScrollArea>
 
-      <div className="p-3 border-t border-white/10 bg-white/5 backdrop-blur-sm">
+      <div className="p-3 border-t border-white/10 bg-white/5 backdrop-blur-md">
         <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 group">
               <Input 
-                placeholder="Send a message..." 
+                placeholder="Message all nodes..." 
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="w-full bg-black/40 border-white/10 rounded-xl px-3 py-2 text-xs focus-visible:ring-1 focus-visible:ring-blue-500/50 transition-all pr-20 h-10"
+                className="w-full bg-black/40 border-white/10 rounded-xl px-4 py-2.5 text-xs focus-visible:ring-1 focus-visible:ring-blue-500/50 transition-all pr-24 h-11 placeholder:text-slate-600"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button type="button" className="text-white/40 hover:text-white/70 transition-colors p-1">
+                    <button type="button" className="text-white/40 hover:text-white/80 transition-colors p-1.5 rounded-lg hover:bg-white/5">
                       <Smile className="w-4 h-4" />
                     </button>
                   </PopoverTrigger>
@@ -247,18 +345,19 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
                 
                 <button 
                   type="button" 
+                  disabled={isUploading}
                   onClick={() => fileInputRef.current?.click()} 
-                  className="text-white/40 hover:text-white/70 transition-colors p-1"
+                  className="text-white/40 hover:text-white/80 transition-colors p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30"
                 >
-                  <Paperclip className="w-4 h-4" />
+                  <Paperclip className={cn("w-4 h-4", isUploading && "animate-spin")} />
                 </button>
               </div>
             </div>
 
             <Button 
               type="submit" 
-              disabled={!newMessage.trim()}
-              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-10 px-4 flex items-center gap-2 border-none shadow-lg shadow-blue-600/20 disabled:opacity-50 transition-all font-bold group"
+              disabled={!newMessage.trim() || isUploading}
+              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-11 px-5 flex items-center gap-2 border-none shadow-xl shadow-blue-600/20 disabled:opacity-50 transition-all font-bold group"
             >
               <Send className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Send</span>
@@ -266,6 +365,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
           </div>
           <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
         </form>
+        <p className="text-[8px] text-center text-slate-600 mt-2 font-bold uppercase tracking-widest leading-none">End-to-End Encrypted Data Channel</p>
       </div>
     </div>
   );

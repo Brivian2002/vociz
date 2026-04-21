@@ -82,6 +82,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
       <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/10 shadow-3xl pointer-events-auto">
         {/* Mobile Toggle Chat */}
         <button 
+          type="button"
           onClick={() => onToggleTab?.('chat')}
           className={cn(
             "lg:hidden w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
@@ -93,6 +94,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
 
         {/* Mobile Toggle Users */}
         <button 
+          type="button"
           onClick={() => onToggleTab?.('participants')}
           className={cn(
             "lg:hidden w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
@@ -106,6 +108,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
 
         {/* Mute */}
         <button 
+          type="button"
           onClick={toggleMic}
           className={cn(
             "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-white transition-all duration-300",
@@ -120,6 +123,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
         
         {/* Hand */}
         <button 
+          type="button"
           onClick={toggleHand}
           className={cn(
             "w-10 h-10 md:w-12 md:h-12 rounded-full border border-white/10 flex items-center justify-center transition-all",
@@ -133,6 +137,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
         {/* Chime Bell (Host Only) */}
         {isHost && (
           <button 
+            type="button"
             onClick={playChime}
             className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center group transition-colors hover:bg-amber-500/30"
             title="Chime Room"
@@ -143,6 +148,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
 
         {/* Leave */}
         <button 
+          type="button"
           onClick={handleLeave}
           className="px-4 md:px-6 h-10 md:h-12 rounded-full bg-red-600 flex items-center gap-2 text-white font-bold shadow-xl shadow-red-600/30 hover:bg-red-700 transition-all active:scale-95"
         >
