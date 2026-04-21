@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { LiveKitRoom, RoomAudioRenderer } from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { supabase, isConfigured } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
@@ -14,6 +14,41 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'motion/react';
+import { RoomEvent } from 'livekit-client';
+
+function RoomEventListener() {
+  const { localParticipant } = useLocalParticipant();
+  const room = useRoomContext();
+
+  useEffect(() => {
+    const onDataReceived = (payload: Uint8Array, participant?: any) => {
+      const decoder = new TextDecoder();
+      const str = decoder.decode(payload);
+      try {
+        const data = JSON.parse(str);
+        if (data.action === 'mute' && data.targetSid === localParticipant.sid) {
+          localParticipant.setMicrophoneEnabled(false);
+          toast.warning('Host muted your microphone');
+        }
+        if (data.action === 'lowerHand' && data.targetSid === localParticipant.sid) {
+          const metadata = JSON.parse(localParticipant.metadata || '{}');
+          const newMetadata = { ...metadata, handRaised: false };
+          localParticipant.setMetadata(JSON.stringify(newMetadata));
+          toast.info('Host lowered your hand');
+        }
+      } catch (e) {
+        // Ignore non-json
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, onDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, onDataReceived);
+    };
+  }, [room, localParticipant]);
+
+  return null;
+}
 
 interface MeetingProps {
   session: Session | null;
@@ -101,7 +136,11 @@ export default function Meeting({ session: _session }: MeetingProps) {
           const attempt = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ room: code, identity: displayName }),
+            body: JSON.stringify({ 
+              room: code, 
+              identity: displayName,
+              isHost: isHost // Pass host status to backend
+            }),
           });
           if (attempt.ok) {
             res = attempt;
@@ -279,7 +318,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   <ChatPanel roomCode={code!} displayName={displayName} />
                 </TabsContent>
                 <TabsContent value="participants" className="h-full m-0">
-                  <ParticipantsPanel />
+                  <ParticipantsPanel isHost={isHost} />
                 </TabsContent>
               </div>
             </Tabs>
@@ -289,6 +328,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <RoomAudioRenderer />
       <AudioControlBar isHost={isHost} />
+      <RoomEventListener />
     </LiveKitRoom>
   );
 }

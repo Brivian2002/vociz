@@ -18,12 +18,12 @@ async function startServer() {
 
   // LiveKit Token Generation API
   app.post("/api/livekit/token", async (req, res) => {
-    const { room, identity } = req.body;
+    const { room, identity, isHost } = req.body;
 
     if (!room || !identity) {
       return res.status(400).json({ error: "Missing room or identity" });
     }
-
+    
     const apiKey = process.env.LIVEKIT_API_KEY;
     const apiSecret = process.env.LIVEKIT_API_SECRET;
 
@@ -41,6 +41,7 @@ async function startServer() {
         room,
         canPublish: true,
         canSubscribe: true,
+        roomAdmin: !!isHost, // Grant admin rights if requested as host
       });
 
       const token = await at.toJwt();
