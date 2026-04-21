@@ -3,16 +3,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/livekit/token"
+      "destination": "/api/$1"
     },
     {
       "source": "/(.*)",
-      "destination": "/dist/$1"
+      "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "server.ts": {
-      "runtime": "@vercel/node"
-    }
-  }
+  ]
 }
