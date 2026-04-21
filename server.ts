@@ -34,6 +34,7 @@ async function startServer() {
     try {
       const at = new AccessToken(apiKey, apiSecret, {
         identity,
+        metadata: JSON.stringify({ name: identity }),
       });
 
       at.addGrant({
@@ -41,6 +42,7 @@ async function startServer() {
         room,
         canPublish: true,
         canSubscribe: true,
+        canPublishData: true,
         roomAdmin: !!isHost, // Grant admin rights if requested as host
       });
 

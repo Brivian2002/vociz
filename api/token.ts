@@ -22,6 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const at = new AccessToken(apiKey, apiSecret, {
       identity,
+      metadata: JSON.stringify({ name: identity }),
     });
 
     at.addGrant({
@@ -29,6 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       room,
       canPublish: true,
       canSubscribe: true,
+      canPublishData: true,
       roomAdmin: !!isHost,
     });
 

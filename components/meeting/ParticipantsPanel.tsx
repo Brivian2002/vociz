@@ -79,6 +79,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
           {participants.map((p) => {
             const isLocal = p.sid === localParticipant?.sid;
             const metadata = JSON.parse(p.metadata || '{}');
+            const displayName = metadata.name || p.identity || 'Anonymous';
             const isHandRaised = metadata.handRaised;
             const isMuted = !p.isMicrophoneEnabled;
             const isActiveSpeaker = p.isSpeaking;
@@ -112,7 +113,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                   >
                     <Avatar
                       size={36}
-                      name={p.identity}
+                      name={displayName}
                       variant="beam"
                     />
                   </motion.div>
@@ -134,7 +135,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                       }}
                       className="text-sm font-semibold truncate"
                     >
-                      {p.identity}
+                      {displayName}
                     </motion.span>
                     {isLocal && <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">(You)</span>}
                   </div>

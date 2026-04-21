@@ -48,6 +48,10 @@ export default function ParticipantStage() {
               const isLocal = p.sid === localParticipant?.sid;
               const isSpeaking = p.isSpeaking;
               const isMuted = !p.isMicrophoneEnabled;
+              
+              // Handle metadata name as expert suggested
+              const metadata = JSON.parse(p.metadata || '{}');
+              const displayName = metadata.name || p.identity || 'Anonymous';
 
               return (
                 <motion.div
@@ -110,7 +114,7 @@ export default function ParticipantStage() {
                     >
                       <Avatar
                         size={84}
-                        name={p.identity}
+                        name={displayName}
                         variant="beam"
                       />
                     </motion.div>
@@ -126,7 +130,7 @@ export default function ParticipantStage() {
 
                   <div className="space-y-1.5 z-10">
                     <h3 className="text-lg md:text-xl font-bold text-white truncate max-w-[150px] md:max-w-[200px] tracking-tight">
-                      {p.identity}
+                      {displayName}
                     </h3>
                     <div className="flex items-center justify-center gap-2">
                        {isLocal ? (

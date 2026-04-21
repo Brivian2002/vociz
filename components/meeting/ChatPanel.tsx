@@ -32,7 +32,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
 
-  // Handle incoming LiveKit data messages
+  // Handle incoming LiveKit data messages (High-speed, peer-to-peer)
   useEffect(() => {
     const handleData = (payload: Uint8Array, participant?: any) => {
       const decoder = new TextDecoder();
@@ -48,17 +48,16 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
             message: data.message,
             attachments: data.attachments || [],
             created_at: data.created_at || new Date().toISOString(),
-            isRealtimeOnly: true
           };
 
           setMessages(prev => {
-            // Deduplicate if we already have this ID from DB
+            // Deduplicate: Don't add if message exists (likely from Supabase)
             if (prev.some(m => m.id === incomingMsg.id)) return prev;
             return [...prev, incomingMsg];
           });
         }
       } catch (e) {
-        // Not a chat message
+        // Not chat data
       }
     };
 
@@ -69,10 +68,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
   useEffect(() => {
     // Initial fetch from Supabase
     const fetchMessages = async () => {
-      if (!isConfigured) {
-        console.warn('Supabase not configured. Only LiveKit realtime chat will work.');
-        return;
-      }
+      if (!isConfigured) return;
       
       const { data, error } = await supabase
         .from('chat_messages')
@@ -85,14 +81,19 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
 
     fetchMessages();
 
-    // Supabase Realtime subscription (Optional fallback if LiveKit misses something)
+    // Supabase Realtime subscription
     let channel: any = null;
     if (isConfigured) {
       channel = supabase
         .channel(`chat:${roomCode}`)
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'chat_messages', 
+            filter: `meeting_code=eq.${roomCode}` 
+          },
           (payload) => {
             const newMsg = payload.new as Message;
             setMessages((prev) => {
@@ -115,15 +116,16 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
     }
   }, [messages]);
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    e?.preventDefault();
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault(); // CRITICAL: Stop the page reload
     if (!newMessage.trim()) return;
 
     const messageToSend = newMessage.trim();
-    const msgId = Math.random().toString(36).substring(7);
+    const msgId = crypto.randomUUID();
     const timestamp = new Date().toISOString();
     setNewMessage('');
 
+    // 1. Prepare payload
     const chatPayload = {
       type: 'chat',
       id: msgId,
@@ -133,43 +135,41 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
       created_at: timestamp
     };
 
-    // 1. Broadcast via LiveKit Data Channel (Reliable)
+    // 2. Local Echo (Instant feedback)
+    const localMsg: Message = {
+      id: msgId,
+      meeting_code: roomCode,
+      user_id: null,
+      display_name: displayName,
+      message: messageToSend,
+      attachments: [],
+      created_at: timestamp
+    };
+    setMessages(prev => [...prev, localMsg]);
+
+    // 3. Broadcast via LiveKit for sub-millisecond delivery if peers are connected
     const encoder = new TextEncoder();
-    const data = encoder.encode(JSON.stringify(chatPayload));
-    
     try {
-      await localParticipant.publishData(data, { reliable: true });
-      
-      // Local Echo
-      const localMsg: Message = {
-        id: msgId,
-        meeting_code: roomCode,
-        user_id: null,
-        display_name: displayName,
-        message: messageToSend,
-        attachments: [],
-        created_at: timestamp,
-        isRealtimeOnly: true
-      };
-      setMessages(prev => [...prev, localMsg]);
+      await localParticipant.publishData(encoder.encode(JSON.stringify(chatPayload)), { 
+        reliable: true 
+      });
     } catch (err) {
-      console.error('Failed to broadcast via LiveKit:', err);
-      toast.error('Realtime message delivery failed');
+      console.warn('LiveKit data broadcast failed, falling back to Supabase only');
     }
 
-    // 2. Persist to Supabase (Background)
+    // 4. Perist to Supabase
     if (isConfigured) {
       try {
-        await supabase.from('chat_messages').insert({
-          id: msgId, // Use same ID to avoid duplicates on fetch
+        const { error } = await supabase.from('chat_messages').insert({
+          id: msgId,
           meeting_code: roomCode,
-          user_id: null,
           display_name: displayName,
           message: messageToSend,
           attachments: [],
         });
+        if (error) throw error;
       } catch (err: any) {
-        console.warn('Database persistence failed (background):', err);
+        toast.error('Failed to sync message to server history');
       }
     }
   };

@@ -60,7 +60,11 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const navigate = useNavigate();
   
   const [token, setToken] = useState<string | null>(null);
-  const [liveKitUrl, setLiveKitUrl] = useState<string>(import.meta.env.VITE_LIVEKIT_URL || '');
+  const [liveKitUrl, setLiveKitUrl] = useState<string>(
+    import.meta.env.VITE_LIVEKIT_URL || 
+    import.meta.env.NEXT_PUBLIC_LIVEKIT_URL || 
+    ''
+  );
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
