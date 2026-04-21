@@ -21,7 +21,25 @@ export default function AudioControlBar({ isHost }: { isHost: boolean }) {
   const isHandRaised = metadata.handRaised;
 
   const toggleMic = async () => {
-    await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+    try {
+      if (!localParticipant) {
+        toast.error('Voice engine not ready');
+        return;
+      }
+      
+      const targetState = !isMicrophoneEnabled;
+      await localParticipant.setMicrophoneEnabled(targetState);
+      
+      toast.success(targetState ? 'Microphone On' : 'Microphone Muted', {
+        duration: 1500,
+        position: 'top-center'
+      });
+    } catch (error: any) {
+      console.error('Failed to toggle microphone:', error);
+      toast.error('Microphone Error', {
+        description: 'Please check your browser permissions or hardware connection.'
+      });
+    }
   };
 
   const toggleHand = async () => {

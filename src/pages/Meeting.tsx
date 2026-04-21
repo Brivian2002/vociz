@@ -85,9 +85,10 @@ export default function Meeting({ session: _session }: MeetingProps) {
     try {
       // Prioritize the external backends provided by the user
       const endpoints = [
+        'https://vociz-47v8.onrender.com/api/token',
+        'https://vociz-47v8.onrender.com/token',
         'https://voicecalls.vercel.app/api/token',
         'https://vociz.onrender.com/api/token',
-        'https://vociz.onrender.com/token',
         '/api/token', 
         '/api/livekit/token'
       ];

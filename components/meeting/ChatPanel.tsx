@@ -75,31 +75,35 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
     const messageToSend = newMessage.trim();
     setNewMessage('');
 
-    if (isConfigured) {
-      const { error } = await supabase.from('chat_messages').insert({
-        meeting_code: roomCode,
-        user_id: null,
-        display_name: displayName,
-        message: messageToSend,
-        attachments: [],
-      });
+    const localMsg: Message = {
+      id: Math.random().toString(),
+      meeting_code: roomCode,
+      user_id: null,
+      display_name: displayName,
+      message: messageToSend,
+      attachments: [],
+      created_at: new Date().toISOString()
+    };
 
-      if (error) {
-        console.error('Error sending message:', error);
-        toast.error('Failed to send message');
+    if (isConfigured) {
+      try {
+        const { error } = await supabase.from('chat_messages').insert({
+          meeting_code: roomCode,
+          user_id: null,
+          display_name: displayName,
+          message: messageToSend,
+          attachments: [],
+        });
+
+        if (error) throw error;
+      } catch (err: any) {
+        console.warn('Database chat failed, falling back to local echo:', err);
+        // Add to local state so user can at least see it in their own session
+        setMessages(prev => [...prev, localMsg]);
       }
     } else {
       // Local echo if no DB
-      const tempMsg: Message = {
-        id: Math.random().toString(),
-        meeting_code: roomCode,
-        user_id: null,
-        display_name: displayName,
-        message: messageToSend,
-        attachments: [],
-        created_at: new Date().toISOString()
-      };
-      setMessages(prev => [...prev, tempMsg]);
+      setMessages(prev => [...prev, localMsg]);
     }
   };
 
