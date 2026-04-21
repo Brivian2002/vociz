@@ -34,35 +34,56 @@ export default function ParticipantsPanel() {
             const isActiveSpeaker = p.isSpeaking;
 
             return (
-              <div 
+              <motion.div 
                 key={p.sid} 
+                animate={{
+                  scale: isActiveSpeaker ? [1, 1.01, 1] : 1,
+                  backgroundColor: isActiveSpeaker ? "rgba(59, 130, 246, 0.15)" : isLocal ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0)"
+                }}
+                transition={{ duration: 2, repeat: isActiveSpeaker ? Infinity : 0 }}
                 className={cn(
                   "flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 group relative",
-                  isLocal ? "bg-white/10 border border-white/10" : "hover:bg-white/5 border border-transparent",
-                  isActiveSpeaker && "bg-blue-600/10 border-blue-600/30 ring-1 ring-blue-500/20"
+                  isLocal ? "border border-white/10" : "hover:bg-white/5 border border-transparent",
+                  isActiveSpeaker && "border-blue-600/30 ring-1 ring-blue-500/20"
                 )}
               >
                 <div className="relative z-10">
-                  <div className={cn(
-                    "rounded-full p-0.5 transition-all duration-500",
-                    isActiveSpeaker ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0a0a0f] animate-pulse" : "ring-1 ring-white/10"
-                  )}>
+                  <motion.div 
+                    animate={{
+                      scale: isActiveSpeaker ? [1, 1.1, 1] : 1,
+                    }}
+                    transition={{ duration: 1.5, repeat: isActiveSpeaker ? Infinity : 0 }}
+                    className={cn(
+                      "rounded-full p-0.5 transition-all duration-500",
+                      isActiveSpeaker ? "ring-2 ring-emerald-500 ring-offset-2 ring-offset-[#0a0a0f] shadow-[0_0_15px_rgba(16,185,129,0.4)]" : "ring-1 ring-white/10"
+                    )}
+                  >
                     <Avatar
                       size={36}
                       name={p.identity}
                       variant="beam"
                     />
-                  </div>
+                  </motion.div>
                   {isActiveSpeaker && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-[#0a0a0f] rounded-full" />
+                    <motion.div 
+                      animate={{ scale: [1, 1.2, 1] }} 
+                      transition={{ duration: 1, repeat: Infinity }}
+                      className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-[#0a0a0f] rounded-full" 
+                    />
                   )}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-semibold text-white/90 truncate">
+                    <motion.span 
+                      animate={{
+                        color: isActiveSpeaker ? "#60a5fa" : "#ffffff",
+                        textShadow: isActiveSpeaker ? "0 0 8px rgba(96,165,250,0.5)" : "none"
+                      }}
+                      className="text-sm font-semibold truncate"
+                    >
                       {p.identity}
-                    </span>
+                    </motion.span>
                     {isLocal && <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">(You)</span>}
                   </div>
                   <div className="text-[10px] text-slate-500 font-medium">
@@ -96,7 +117,7 @@ export default function ParticipantsPanel() {
                 {isActiveSpeaker && (
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-transparent rounded-2xl pointer-events-none" />
                 )}
-              </div>
+              </motion.div>
             );
           })}
         </div>

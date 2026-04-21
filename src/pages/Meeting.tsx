@@ -8,6 +8,7 @@ import RoomHeader from '@/components/meeting/RoomHeader';
 import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
+import ParticipantStage from '@/components/meeting/ParticipantStage';
 import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -253,41 +254,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <main className="flex-1 flex overflow-hidden p-6 gap-6 z-10">
         {/* Main Stage (Participant Stage) */}
-        <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
-          <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute top-4 right-4 flex gap-2">
-              {isHost && <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold uppercase">Host</span>}
-              <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              </div>
-            </div>
-            <div className="w-24 h-24 rounded-full bg-indigo-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 shadow-2xl mb-4 uppercase">
-              {displayName.slice(0, 2)}
-            </div>
-            <div className="text-lg font-medium">{displayName} (You)</div>
-            
-            <div className="mt-8 flex justify-center gap-2">
-              {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className={`w-1 bg-emerald-400 rounded-full animate-wave-${i}`} />
-              ))}
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 flex flex-col items-center justify-center relative">
-            <div className="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center text-3xl font-bold border-4 border-white/10 mb-4 opacity-50">
-              LK
-            </div>
-            <div className="text-lg font-medium text-slate-400">AudioSFU Engine</div>
-            <div className="absolute bottom-4 text-[10px] uppercase tracking-widest text-white/20">Optimizing Stream...</div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 flex items-center justify-center relative col-span-2">
-             <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-white/80">Room Capacity: 500+</h3>
-                <p className="text-sm text-slate-400">High-fidelity spatial audio link active</p>
-             </div>
-          </div>
-        </div>
+        <ParticipantStage />
 
         {/* Sidebar: Chat & Participants */}
         <aside className="w-80 flex flex-col gap-4">
