@@ -11,6 +11,7 @@ import AudioControlBar from '@/components/meeting/AudioControlBar';
 import { Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { motion } from 'motion/react';
 
 interface MeetingProps {
