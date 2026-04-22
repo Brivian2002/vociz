@@ -17,18 +17,17 @@ export default function MetalAvatar({ name, size = 100, className, isSpeaking }:
     .toUpperCase()
     .slice(0, 2);
 
-  // Generate a deterministic color based on the name from the requested palette
+  // Generate a deterministic Figma-inspired professional color palette
   const getColors = (str: string) => {
     const palette = [
-      { main: '#000000', accent: '#1a1a1a', shine: '#ffffff', name: 'black', text: '#ffffff' },
-      { main: '#2c3e50', accent: '#bdc3c7', shine: '#ecf0f1', name: 'grey', text: '#ffffff' },
-      { main: '#0f172a', accent: '#3b82f6', shine: '#93c5fd', name: 'blue-black', text: '#ffffff' },
-      { main: '#78350f', accent: '#eab308', shine: '#fef3c7', name: 'yellow', text: '#ffffff' },
-      { main: '#450a0a', accent: '#ef4444', shine: '#fee2e2', name: 'red', text: '#ffffff' },
-      { main: '#1e3a8a', accent: '#60a5fa', shine: '#dbeafe', name: 'blue', text: '#ffffff' },
-      { main: '#500724', accent: '#ec4899', shine: '#fdf2f8', name: 'pink', text: '#ffffff' },
-      { main: '#064e3b', accent: '#10b981', shine: '#ecfdf5', name: 'green', text: '#ffffff' },
-      { main: '#451a03', accent: '#b45309', shine: '#fff7ed', name: 'brown', text: '#ffffff' },
+      { main: '#1A1A1A', accent: '#333333', shine: '#FFFFFF', name: 'onyx' },
+      { main: '#0F172A', accent: '#1E293B', shine: '#3B82F6', name: 'slate' },
+      { main: '#1E1B4B', accent: '#312E81', shine: '#6366F1', name: 'indigo' },
+      { main: '#064E3B', accent: '#065F46', shine: '#10B981', name: 'emerald' },
+      { main: '#450A0A', accent: '#7F1D1D', shine: '#EF4444', name: 'rose' },
+      { main: '#2D1B69', accent: '#4338CA', shine: '#818CF8', name: 'violet' },
+      { main: '#134E4A', accent: '#115E59', shine: '#14B8A6', name: 'teal' },
+      { main: '#581C87', accent: '#7E22CE', shine: '#A855F7', name: 'purple' },
     ];
 
     let hash = 0;
@@ -38,73 +37,69 @@ export default function MetalAvatar({ name, size = 100, className, isSpeaking }:
     const index = Math.abs(hash) % palette.length;
     const color = palette[index];
 
-    return {
-      main: color.main,
-      accent: color.accent,
-      shine: color.shine,
-    };
+    return color;
   };
 
   const colors = getColors(name);
 
   return (
     <div 
-      className={cn("relative flex items-center justify-center rounded-full overflow-hidden shadow-2xl", className)}
+      className={cn("relative flex items-center justify-center rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300", className)}
       style={{ width: size, height: size }}
     >
-      {/* Metallic Base Layer */}
+      {/* Figma Pro Gradient Base */}
       <div 
-        className="absolute inset-0 bg-neutral-900"
+        className="absolute inset-0 rounded-full"
         style={{ 
-          background: `linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%)`, 
-          border: '1px solid rgba(255,255,255,0.05)'
+          background: `linear-gradient(145deg, ${colors.accent} 0%, ${colors.main} 100%)`,
+          boxShadow: `inset 0 2px 4px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.1)`
         }} 
       />
 
-      {/* Frosted / Glass Layer */}
+      {/* Subtle Inner Glow */}
       <div 
-        className="absolute inset-0 backdrop-blur-xl bg-opacity-20 flex items-center justify-center"
-        style={{ background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 70%)` }}
-      />
-
-      {/* Metallic Gradient Mesh */}
-      <div 
-        className="absolute inset-0 opacity-40 mix-blend-overlay"
+        className="absolute inset-[1px] rounded-full opacity-20"
         style={{ 
-          background: `linear-gradient(215deg, ${colors.accent} 0%, transparent 50%), linear-gradient(35deg, ${colors.main} 0%, transparent 50%)` 
-        }} 
-      />
-
-      {/* Glossy Reflection */}
-      <div 
-        className="absolute inset-0 opacity-30"
-        style={{ 
-          background: `linear-gradient(to bottom right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)`,
-          clipPath: 'circle(50% at 50% 50%)'
+          background: `radial-gradient(circle at 30% 30%, ${colors.shine} 0%, transparent 80%)` 
         }}
       />
 
-      {/* Speaking Glow Ring */}
+      {/* Speaking Aura */}
       {isSpeaking && (
         <motion.div
-           initial={{ scale: 0.8, opacity: 0 }}
-           animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+           initial={{ opacity: 0, scale: 1 }}
+           animate={{ 
+             opacity: [0.2, 0.4, 0.2],
+             scale: [1, 1.15, 1],
+           }}
            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-           className="absolute inset-[-4px] rounded-full ring-2 ring-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] z-0"
+           className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl z-0"
         />
       )}
 
-      {/* Initials Text with Metallic Look */}
+      {/* Perfectly Round Inner Border (The 'Inner One' refinement) */}
+      <div className="absolute inset-0 rounded-full border border-white/10 z-10" />
+      <div className="absolute inset-[1px] rounded-full border border-white/[0.05] z-10" />
+
+      {/* Initials with Professional Typography */}
       <span 
-        className="relative z-10 font-bold select-none tracking-tight text-white drop-shadow-md"
-        style={{ fontSize: size * 0.35 }}
+        className="relative z-20 font-black select-none tracking-tight text-white/90"
+        style={{ 
+          fontSize: size * 0.38,
+          textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+        }}
       >
         {initials}
       </span>
 
-      {/* Rim Light / Edge Highlights */}
-      <div className="absolute inset-0 rounded-full border border-white/5 pointer-events-none" />
-      <div className="absolute inset-0 rounded-full border-t border-l border-white/20 pointer-events-none" />
+      {/* Top Edge Highlight for Figma Depth */}
+      <div 
+        className="absolute top-0 inset-x-0 h-1/2 rounded-full opacity-10 pointer-events-none"
+        style={{ 
+          background: `linear-gradient(to bottom, #FFFFFF 0%, transparent 100%)`,
+          clipPath: 'circle(50% at 50% 10%)'
+        }}
+      />
     </div>
   );
 }

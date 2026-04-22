@@ -111,7 +111,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className={cn(
-                    "flex items-center gap-4 p-3 rounded-2xl transition-all duration-500 group relative border",
+                    "flex items-center gap-4 p-3 rounded-full transition-all duration-500 group relative border",
                     isLocal ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.02] border-transparent hover:border-white/5",
                     isActiveSpeaker && "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_20px_rgba(16,185,129,0.1)]",
                     isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"

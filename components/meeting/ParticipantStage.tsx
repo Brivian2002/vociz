@@ -84,7 +84,7 @@ export default function ParticipantStage() {
                   }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   className={cn(
-                    "glass-surface rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[220px] md:min-h-[300px] p-6 text-center border border-white/5 shadow-2xl",
+                    "glass-surface rounded-[4rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[240px] md:min-h-[320px] p-8 text-center border border-white/5 shadow-2xl",
                     isSpeaking ? "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)]" : "hover:bg-white/[0.02]",
                     isLocal && "ring-1 ring-blue-500/20 bg-blue-500/[0.02]"
                   )}
