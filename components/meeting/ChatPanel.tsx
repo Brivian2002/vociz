@@ -4,13 +4,29 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon, Zap, X, Bold, Italic, Code, Video as VideoIcon, Download } from 'lucide-react';
+import { 
+  Send, 
+  Paperclip, 
+  Smile, 
+  Image as ImageIcon, 
+  File as FileIcon, 
+  Zap, 
+  X, 
+  Bold, 
+  Italic, 
+  Code, 
+  Video as VideoIcon, 
+  Download,
+  Share
+} from 'lucide-react';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRoomContext, useLocalParticipant } from '@livekit/components-react';
 import { RoomEvent } from 'livekit-client';
 import ReactMarkdown from 'react-markdown';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface Message {
   id: string;
@@ -69,6 +85,57 @@ export default function ChatPanel({
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage(prev => prev + emojiData.emoji);
+  };
+
+  const handleExportHistory = () => {
+    if (messages.length === 0) {
+      toast.info('No message data available for transmission export.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF() as any;
+      
+      doc.setFontSize(22);
+      doc.text('VOICEMEET SESSION LOG', 14, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`NETWORK NODE: ${roomCode}`, 14, 28);
+      doc.text(`TIMESTAMP: ${new Date().toLocaleString()}`, 14, 33);
+      doc.setDrawColor(230);
+      doc.line(14, 38, 196, 38);
+
+      const tableData = messages.map(msg => [
+        new Date(msg.created_at).toLocaleTimeString(),
+        msg.display_name.toUpperCase(),
+        msg.message || (msg.attachments?.length ? `[ATTACHMENT: ${msg.attachments[0].name}]` : '')
+      ]);
+
+      doc.autoTable({
+        startY: 45,
+        head: [['TIMESTAMP', 'NODE IDENTITY', 'COMMUNICATION DATA']],
+        body: tableData,
+        theme: 'plain',
+        headStyles: { 
+          fillColor: [0, 0, 0], 
+          textColor: [255, 255, 255], 
+          fontSize: 8, 
+          fontStyle: 'bold',
+          cellPadding: 4
+        },
+        styles: { fontSize: 8, cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 'auto' }
+        }
+      });
+
+      doc.save(`VOICEMEET_LOG_${roomCode}.pdf`);
+      toast.success('Communication History Exported.');
+    } catch (err) {
+      toast.error('Failed to generate export document.');
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -198,12 +265,23 @@ export default function ChatPanel({
              <span className="text-[7px] font-black uppercase tracking-tighter italic">Secure Node Sync</span>
           </div>
         </div>
-        {onClose && (
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleExportHistory} 
+            className="w-8 h-8 rounded-full hover:bg-black/5 text-black"
+            title="Export History"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </Button>
+          {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-black/5 text-black">
             <X className="w-4 h-4" />
           </Button>
         )}
       </div>
+    </div>
 
       <input 
         type="file" 

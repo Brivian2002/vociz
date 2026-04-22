@@ -36,7 +36,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
     if (!isHost) return;
     try {
       const encoder = new TextEncoder();
-      const payload = JSON.stringify({ action: 'mute', targetSid: p.sid });
+      const payload = JSON.stringify({ type: 'signal', action: 'mute', targetSid: p.sid });
       await localParticipant.publishData(encoder.encode(payload), { reliable: true });
       toast.success(`Mute command sent to ${p.identity}`);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
     if (!isHost) return;
     try {
       const encoder = new TextEncoder();
-      const payload = JSON.stringify({ action: 'lowerHand', targetSid: p.sid });
+      const payload = JSON.stringify({ type: 'signal', action: 'lowerHand', targetSid: p.sid });
       await localParticipant.publishData(encoder.encode(payload), { reliable: true });
       toast.info(`Lower hand signal sent`);
     } catch (err) {
