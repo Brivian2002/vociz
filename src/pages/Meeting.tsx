@@ -286,127 +286,86 @@ export default function Meeting({ session: _session }: MeetingProps) {
   if (!hasJoined) {
     return (
       <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans">
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 blur-[120px] pointer-events-none" />
+        <div className="absolute top-[0%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
         
-        <div className="z-10 w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left Side: Brand & Visuals */}
-          <div className="space-y-12">
-            <div className="flex items-center gap-6">
-              <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-600/40 transform -rotate-12">
-                <Video className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-4xl font-black uppercase tracking-tighter text-white italic">VoiceMeet</h1>
-                <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] ml-1">Universal Bridge</span>
-              </div>
+        <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
+          {/* Brand */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)]">
+              <Video className="w-5 h-5 text-black" />
             </div>
-
-            <div className="glass-surface-heavy rounded-[2rem] p-8 border border-white/5 bg-black/40 space-y-6">
-               <div className="flex items-center gap-4 text-white/80">
-                  <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
-                     <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                  </div>
-                  <h3 className="font-black text-sm uppercase tracking-widest">Protocol Rules</h3>
-               </div>
-               <div className="grid gap-4">
-                  {[
-                    { icon: <MousePointer2 className="w-4 h-4" />, text: "Use your real identity (Rename if needed)" },
-                    { icon: <MicOff className="w-4 h-4" />, text: "Keep Mic Muted unless speaking" },
-                    { icon: <Scale className="w-4 h-4" />, text: "Maintain respect & professional order" },
-                    { icon: <ShieldAlert className="w-4 h-4" />, text: "Session is encrypted and logged" }
-                  ].map((rule, i) => (
-                    <div key={i} className="flex items-center gap-4 group">
-                       <div className="w-8 h-8 rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center text-slate-600 group-hover:text-blue-500 transition-colors">
-                          {rule.icon}
-                       </div>
-                       <p className="text-xs font-bold text-slate-500 group-hover:text-slate-300 transition-colors">{rule.text}</p>
-                    </div>
-                  ))}
-               </div>
-            </div>
-            
-            <div className="flex items-center gap-6 opacity-40">
-               <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-700 uppercase">Latency Target</span>
-                  <span className="text-xs font-mono font-black text-slate-500">&lt; 30ms Mesh</span>
-               </div>
-               <div className="w-px h-8 bg-white/10" />
-               <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-slate-700 uppercase">Security Tier</span>
-                  <span className="text-xs font-mono font-black text-slate-500">AES-256 GCM</span>
-               </div>
-            </div>
+            <h1 className="text-xl font-black uppercase tracking-tighter text-white/90 italic">VoiceMeet</h1>
           </div>
           
-          {/* Right Side: Join Dashboard */}
+          {/* Join Dashboard */}
           <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="glass-surface-heavy rounded-[3rem] p-12 shadow-3xl space-y-10 border border-white/5 bg-black/60 backdrop-blur-3xl relative"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full bg-[#0c0d12] border border-white/10 rounded-[2rem] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] space-y-10 relative overflow-hidden"
           >
-            <div className="absolute top-8 right-10">
-               <Zap className="w-6 h-6 text-blue-500/20 animate-pulse" />
-            </div>
-
             <div className="text-center space-y-2">
-              <h2 className="text-2xl font-black text-white italic tracking-tight">PRE-FLIGHT DASHBOARD</h2>
-              <p className="text-slate-600 font-mono text-[10px] uppercase tracking-widest">Bridging Node: <span className="text-blue-500 font-black">{code?.toUpperCase()}</span></p>
+              <h2 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">PRE-FLIGHT DASHBOARD</h2>
+              <div className="h-[2px] w-8 bg-white mx-auto opacity-20" />
             </div>
 
             <div className="space-y-10">
-              <div className="flex flex-col items-center gap-8">
-                <div className="relative group">
-                   <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full scale-110 group-hover:bg-blue-500/30 transition-all" />
-                   <div className="w-32 h-32 rounded-full border border-white/10 flex items-center justify-center p-1.5 bg-white/[0.03] relative z-10 overflow-hidden">
-                      <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600 to-blue-950 flex items-center justify-center shadow-inner relative group/avatar">
-                         <span className="text-5xl font-black text-white drop-shadow-2xl z-10 uppercase italic">{displayName ? displayName.slice(0, 1) : '?'}</span>
-                         <div className="absolute inset-0 bg-blue-400/10 mix-blend-overlay group-hover/avatar:scale-125 transition-transform duration-1000" />
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative">
+                   <div className="w-20 h-20 rounded-full border border-white/5 flex items-center justify-center p-1 bg-white/[0.01] relative z-10">
+                      <div className="w-full h-full rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-inner relative overflow-hidden">
+                         <span className="text-3xl font-black text-white italic uppercase">{displayName ? displayName.slice(0, 1) : '?'}</span>
                       </div>
                    </div>
+                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-[#0c0d12] shadow-lg" />
                 </div>
                 
-                <div className="space-y-4 w-full">
-                  <div className="space-y-2.5">
-                    <label className="text-[9px] uppercase tracking-[0.3em] font-black text-slate-600 ml-4">Identity Authorization</label>
-                    <Input 
-                      placeholder="ENTER NODE IDENTITY" 
-                      value={displayName}
-                      onChange={(e) => {
-                        setDisplayName(e.target.value);
-                        broadcastJoinIntent();
-                      }}
-                      className="h-16 bg-black/60 border-white/10 rounded-2xl text-white placeholder:text-slate-800 text-center font-black tracking-widest focus:ring-blue-500/30 text-xl border-2 transition-all"
-                    />
-                  </div>
+                <div className="space-y-3 w-full">
+                  <label className="text-[9px] uppercase tracking-[0.2em] font-black text-white/30 text-center block">Access Identity</label>
+                  <Input 
+                    placeholder="IDENTIFY NODE" 
+                    value={displayName}
+                    onChange={(e) => {
+                      setDisplayName(e.target.value);
+                      broadcastJoinIntent();
+                    }}
+                    className="h-12 bg-black/40 border-white/5 rounded-lg text-white placeholder:text-zinc-800 text-center font-black tracking-widest focus-visible:ring-1 focus-visible:ring-white/20 text-md transition-all uppercase border-2"
+                  />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
                 <Button 
                   onClick={handleJoin}
                   disabled={isJoining || !displayName.trim()}
-                  className="w-full h-16 bg-blue-600 hover:bg-blue-500 text-white rounded-[1.8rem] font-black text-sm uppercase tracking-[0.3em] shadow-2xl shadow-blue-900/40 active:scale-95 transition-all border-none relative overflow-hidden group"
+                  className="w-full h-12 bg-white hover:bg-zinc-200 text-black rounded-lg font-black text-xs uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_10px_20px_rgba(255,255,255,0.05)]"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                   {isJoining ? (
                     <div className="flex items-center gap-3">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Initializing Node...
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      SYNCING
                     </div>
-                  ) : 'AUTHENTICATE & JOIN'}
+                  ) : 'JOIN'}
                 </Button>
 
-                <Button
-                  onClick={handlePWAInstall}
-                  variant="outline"
-                  className="w-full h-14 bg-white/[0.02] border-white/5 text-slate-500 rounded-[1.4rem] flex items-center justify-center gap-4 hover:text-white hover:bg-white/10 transition-all font-black uppercase text-[9px] tracking-widest"
-                >
-                   <Download className="w-4 h-4 text-blue-500" />
-                   System Install (Desktop/Mobile)
-                </Button>
+                <div className="flex items-center justify-center gap-2 mt-4">
+                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                   <p className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">
+                      Secure Bridge: <span className="text-white/40">{code?.toUpperCase()}</span>
+                   </p>
+                </div>
               </div>
             </div>
           </motion.div>
+
+          <Button
+            onClick={handlePWAInstall}
+            variant="ghost"
+            className="text-white/20 hover:text-white transition-colors text-[8px] font-black uppercase tracking-widest flex items-center gap-2 h-auto py-2"
+          >
+             <Download className="w-3.5 h-3.5" />
+             Install Application Node
+          </Button>
         </div>
       </div>
     );
