@@ -17,7 +17,7 @@ async function startServer() {
   app.use(express.json());
 
   // LiveKit Token Generation API
-  app.post("/api/livekit/token", async (req, res) => {
+  app.post("/api/token", async (req, res) => {
     const { room, identity, isHost } = req.body;
 
     if (!room || !identity) {

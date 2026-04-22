@@ -222,7 +222,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
     setIsJoining(true);
     try {
       const roomToJoin = normalizedCode;
-      const res = await fetch('/api/livekit/token', {
+      const res = await fetch('/api/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room: roomToJoin, identity: displayName, isHost }),
