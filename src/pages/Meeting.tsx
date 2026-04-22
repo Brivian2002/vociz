@@ -174,6 +174,10 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const isCreator = searchParams.get('host') === 'true';
 
   useEffect(() => {
+    if (isCreator) setIsHost(true);
+  }, [isCreator]);
+
+  useEffect(() => {
     if (activeTab === 'chat') setUnreadCount(0);
   }, [activeTab]);
 
@@ -223,17 +227,28 @@ export default function Meeting({ session: _session }: MeetingProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ room: roomToJoin, identity: displayName, isHost }),
       });
-      if (!res.ok) throw new Error('Join failed');
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with ${res.status}`);
+      }
+      
       const data = await res.json();
       const now = new Date();
       setJoinTime(now);
+      
+      if (data.url && !liveKitUrl) {
+        setLiveKitUrl(data.url);
+      }
+      
       setToken(data.token || data);
       setHasJoined(true);
       
       // Attendance Start
       setAttendance(prev => [...prev, { name: displayName, joinAt: now.toLocaleTimeString(), leaveAt: 'ACTIVE' }]);
     } catch (err: any) {
-      toast.error('Connection failed');
+      console.error('Join error:', err);
+      toast.error(`Connection failed: ${err.message}`);
     } finally {
       setIsJoining(false);
     }
