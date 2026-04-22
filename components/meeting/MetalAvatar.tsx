@@ -20,15 +20,15 @@ export default function MetalAvatar({ name, size = 100, className, isSpeaking }:
   // Generate a deterministic color based on the name from the requested palette
   const getColors = (str: string) => {
     const palette = [
-      { main: '#0a0a0a', accent: '#404040', shine: '#ffffff', name: 'black' },
-      { main: '#262626', accent: '#737373', shine: '#d4d4d4', name: 'grey' },
-      { main: '#0f172a', accent: '#3b82f6', shine: '#93c5fd', name: 'blue-black' },
-      { main: '#422006', accent: '#eab308', shine: '#fde047', name: 'yellow' },
-      { main: '#450a0a', accent: '#ef4444', shine: '#fca5a5', name: 'red' },
-      { main: '#1e3a8a', accent: '#3b82f6', shine: '#bfdbfe', name: 'blue' },
-      { main: '#500724', accent: '#ec4899', shine: '#fbcfe8', name: 'pink' },
-      { main: '#064e3b', accent: '#10b981', shine: '#d1fae5', name: 'green' },
-      { main: '#451a03', accent: '#92400e', shine: '#fcd34d', name: 'brown' },
+      { main: '#000000', accent: '#1a1a1a', shine: '#ffffff', name: 'black', text: '#ffffff' },
+      { main: '#2c3e50', accent: '#bdc3c7', shine: '#ecf0f1', name: 'grey', text: '#ffffff' },
+      { main: '#0f172a', accent: '#3b82f6', shine: '#93c5fd', name: 'blue-black', text: '#ffffff' },
+      { main: '#78350f', accent: '#eab308', shine: '#fef3c7', name: 'yellow', text: '#ffffff' },
+      { main: '#450a0a', accent: '#ef4444', shine: '#fee2e2', name: 'red', text: '#ffffff' },
+      { main: '#1e3a8a', accent: '#60a5fa', shine: '#dbeafe', name: 'blue', text: '#ffffff' },
+      { main: '#500724', accent: '#ec4899', shine: '#fdf2f8', name: 'pink', text: '#ffffff' },
+      { main: '#064e3b', accent: '#10b981', shine: '#ecfdf5', name: 'green', text: '#ffffff' },
+      { main: '#451a03', accent: '#b45309', shine: '#fff7ed', name: 'brown', text: '#ffffff' },
     ];
 
     let hash = 0;

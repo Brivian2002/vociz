@@ -7,8 +7,12 @@ import MetalAvatar from './MetalAvatar';
 export default function ParticipantStage() {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
+  const [now, setNow] = useState(Date.now());
 
-  const remoteParticipants = participants.filter(p => p.sid !== localParticipant?.sid);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -49,9 +53,10 @@ export default function ParticipantStage() {
               const isSpeaking = p.isSpeaking;
               const isMuted = !p.isMicrophoneEnabled;
               
-              // Handle metadata name
               const metadata = JSON.parse(p.metadata || '{}');
               const displayName = metadata.name || p.identity || 'Anonymous';
+              const joinTs = metadata.joinTimestamp || Date.now();
+              const durationMins = Math.floor((now - joinTs) / 60000);
 
               return (
                 <motion.div
@@ -65,68 +70,65 @@ export default function ParticipantStage() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   className={cn(
                     "glass-surface rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[220px] md:min-h-[300px] p-6 text-center border border-white/5 shadow-2xl",
-                    isSpeaking ? "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_50px_-10px_rgba(16,185,129,0.15)]" : "hover:bg-white/[0.02]",
+                    isSpeaking ? "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_60px_-15px_rgba(16,185,129,0.2)]" : "hover:bg-white/[0.02]",
                     isLocal && "ring-1 ring-blue-500/20 bg-blue-500/[0.02]"
                   )}
                 >
-                  {/* Atmospheric Glow */}
-                  {isSpeaking && (
-                    <div className="absolute inset-0 pointer-events-none">
-                      <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/5 to-transparent opacity-50" />
-                    </div>
-                  )}
-
-                  <div className="absolute top-4 right-4 md:top-6 md:right-6">
+                  <div className="absolute top-4 right-4 md:top-6 md:right-6 flex flex-col items-end gap-2">
                     {isMuted ? (
-                      <div className="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 backdrop-blur-sm shadow-xl">
+                      <div className="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 backdrop-blur-sm">
                         <MicOff className="w-3.5 h-3.5" />
                       </div>
                     ) : (
                       <div className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-sm shadow-xl",
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 backdrop-blur-sm",
                         isSpeaking ? "bg-emerald-500 text-white scale-110 shadow-lg shadow-emerald-500/40" : "bg-white/5 text-slate-500 border border-white/5"
                       )}>
                         <Mic className={cn("w-3.5 h-3.5", isSpeaking && "animate-pulse")} />
                       </div>
                     )}
+                    <div className="px-2 py-1 bg-black/40 rounded-lg border border-white/5 backdrop-blur-md">
+                       <span className="text-[7px] font-black font-mono text-slate-400 uppercase tracking-tighter">Strength</span>
+                       <div className="flex gap-0.5 mt-0.5">
+                          <div className="w-0.5 h-1 bg-emerald-500" />
+                          <div className="w-0.5 h-1.5 bg-emerald-500" />
+                          <div className="w-0.5 h-2 bg-emerald-500" />
+                          <div className="w-0.5 h-2.5 bg-emerald-500" />
+                       </div>
+                    </div>
                   </div>
 
-                  <div className="relative mb-8">
+                  <div className="relative mb-6">
                     <MetalAvatar 
                       name={displayName} 
-                      size={96} 
+                      size={110} 
                       isSpeaking={isSpeaking}
-                      className="ring-1 ring-white/10"
+                      className="ring-2 ring-white/10 shadow-3xl"
                     />
-                    
-                    {isSpeaking && (
-                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-0.5 items-end h-3">
-                           {[1, 2, 3, 4, 5].map(i => (
-                              <motion.div 
-                                key={i} 
-                                animate={{ height: [4, 12, 4] }}
-                                transition={{ duration: 0.5 + Math.random(), repeat: Infinity }}
-                                className={cn("w-0.5 rounded-full bg-emerald-400", i%2===0 ? "opacity-40" : "opacity-100")} 
-                              />
-                           ))}
-                        </div>
-                    )}
                   </div>
 
-                  <div className="space-y-2 z-10">
-                    <h3 className="text-base md:text-lg font-black text-white truncate max-w-[150px] md:max-w-[200px] tracking-tight uppercase">
+                  <div className="space-y-3 z-10">
+                    <h3 className="text-base md:text-lg font-black text-white truncate max-w-[150px] md:max-w-[200px] tracking-tight uppercase italic">
                       {displayName}
                     </h3>
-                    <div className="flex items-center justify-center gap-2">
-                       {isLocal ? (
-                          <span className="text-[8px] text-blue-400 font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-blue-500/20 bg-blue-500/10">
-                             Node (You)
+                    <div className="flex flex-col items-center gap-1.5">
+                       <div className="flex items-center gap-2">
+                          {isLocal ? (
+                            <span className="text-[7px] text-blue-400 font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-blue-500/20 bg-blue-500/10">
+                               Node Host Link
+                            </span>
+                          ) : (
+                            <span className="text-[7px] text-slate-500 font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-white/5 bg-white/5">
+                               Peer Transmission
+                            </span>
+                          )}
+                       </div>
+                       <div className="flex items-center gap-2 opacity-50">
+                          <Clock className="w-2.5 h-2.5 text-slate-500" />
+                          <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest leading-none">
+                             Joined {durationMins}m Ago
                           </span>
-                       ) : (
-                          <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-white/5 bg-white/5">
-                             Peer Connection
-                          </span>
-                       )}
+                       </div>
                     </div>
                   </div>
                 </motion.div>

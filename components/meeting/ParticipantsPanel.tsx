@@ -1,4 +1,5 @@
 import { useParticipants, useLocalParticipant, useRoomContext } from '@livekit/components-react';
+import { useState, useEffect } from 'react';
 import { 
   Hand, 
   Mic, 
@@ -23,6 +24,12 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleMuteParticipant = async (p: any) => {
     if (!isHost) return;
@@ -109,46 +116,47 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                     isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"
                   )}
                 >
-                  <div className="relative z-10">
-                    <MetalAvatar name={displayName} size={44} isSpeaking={isActiveSpeaker} />
+                  <div className="relative z-10 shrink-0">
+                    <MetalAvatar name={displayName} size={42} isSpeaking={isActiveSpeaker} />
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-sm font-black uppercase tracking-tight truncate",
-                        isActiveSpeaker ? "text-emerald-400" : "text-white"
-                      )}>
-                        {displayName}
-                      </span>
-                      {isLocal && <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">Self</span>}
+                       <span className={cn(
+                         "text-xs font-black uppercase tracking-tight truncate",
+                         isActiveSpeaker ? "text-emerald-400" : "text-white"
+                       )}>
+                         {displayName}
+                       </span>
+                       {isLocal && <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">You</span>}
                     </div>
                     
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className={cn("flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest", conn.color)}>
-                        {conn.icon}
-                        {conn.label}
-                      </div>
-                      <span className="w-1 h-1 rounded-full bg-white/10" />
-                      <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-                        {isActiveSpeaker ? 'Transmitting' : isMuted ? 'Muted' : 'Standby'}
-                      </div>
+                    <div className="flex flex-col gap-0.5 mt-0.5">
+                       <div className={cn("flex items-center gap-1 text-[8px] font-black uppercase tracking-widest", conn.color)}>
+                         {conn.icon}
+                         {conn.label}
+                         {metadata.joinTimestamp && (
+                            <span className="text-slate-600 ml-0.5 opacity-50">• {Math.floor((now - metadata.joinTimestamp)/60000)}m Ago</span>
+                         )}
+                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 relative z-10">
                     {isHandRaised && (
-                      <motion.div 
-                        animate={{ y: [0, -4, 0] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500"
-                      >
-                        <Hand className="w-4 h-4" />
-                      </motion.div>
+                       <button
+                         onClick={() => isHost && handleLowerHand(p)}
+                         className={cn(
+                           "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
+                           isHost ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                         )}
+                       >
+                         <Hand className="w-4 h-4" />
+                       </button>
                     )}
                     
                     <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center border transition-all",
+                      "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
                       isMuted ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
                       isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
                     )}>
@@ -158,10 +166,10 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                     {isHost && !isLocal && (
                        <button 
                         onClick={() => handleMuteParticipant(p)}
-                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/20 transition-all ml-1"
+                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-red-500 scale-95 hover:scale-100 hover:text-white hover:border-red-500 transition-all ml-0.5"
                         title="Remote Mute"
                       >
-                        <Target className="w-4 h-4" />
+                        <ShieldAlert className="w-4 h-4" />
                       </button>
                     )}
                   </div>

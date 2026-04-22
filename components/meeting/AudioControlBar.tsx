@@ -81,7 +81,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
       type: 'signal', 
       action: 'handRaise', 
       state: nextState,
-      sender: localParticipant.identity 
+      sender: localParticipant.name || localParticipant.identity 
     }));
     
     try {
@@ -108,7 +108,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
     const data = encoder.encode(JSON.stringify({ 
       type: 'signal', 
       action: 'chime',
-      sender: localParticipant.identity 
+      sender: localParticipant.name || localParticipant.identity 
     }));
     
     try {
