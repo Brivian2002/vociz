@@ -250,23 +250,23 @@ export default function ChatPanel({
           {messages.map((msg) => {
             const isMe = msg.display_name === displayName;
             return (
-              <div key={msg.id} className={cn("flex flex-col gap-1", isMe ? "items-end" : "items-start")}>
-                <div className={cn("flex items-baseline gap-2 px-1", isMe ? "flex-row-reverse" : "flex-row")}>
-                  <span className={cn("text-[9px] font-black uppercase tracking-widest", isMe ? "text-blue-500" : "text-emerald-500")}>
-                    {isMe ? 'Local Node' : msg.display_name}
+              <div key={msg.id} className={cn("flex flex-col gap-0.5", isMe ? "items-end" : "items-start")}>
+                <div className={cn("flex items-baseline gap-1.5 px-0.5", isMe ? "flex-row-reverse" : "flex-row")}>
+                  <span className={cn("text-[8px] font-black uppercase tracking-widest", isMe ? "text-blue-500" : "text-emerald-500")}>
+                    {isMe ? 'Host Node' : msg.display_name}
                   </span>
-                  <span className="text-[7px] text-slate-600 font-black">
+                  <span className="text-[6px] text-slate-600 font-black">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 
                 {msg.message && (
-                  <div className={cn("max-w-[88%] message-bubble", isMe ? "ml-auto" : "mr-auto")}>
+                  <div className={cn("max-w-[92%] message-bubble", isMe ? "ml-auto" : "mr-auto")}>
                     <div className={cn(
-                      "text-[11px] p-2.5 rounded-2xl border leading-relaxed break-words markdown-content",
+                      "text-[10px] p-2 rounded-xl border leading-snug break-words markdown-content",
                       isMe 
-                        ? "bg-blue-600 border-blue-500 text-white rounded-tr-none shadow-xl shadow-blue-900/20" 
-                        : "bg-white/[0.03] border-white/10 text-slate-200 rounded-tl-none backdrop-blur-md"
+                        ? "bg-blue-600 border-blue-500 text-white rounded-tr-none shadow-xl" 
+                        : "bg-white/[0.04] border-white/10 text-slate-200 rounded-tl-none backdrop-blur-md"
                     )}>
                       <ReactMarkdown>{msg.message}</ReactMarkdown>
                     </div>

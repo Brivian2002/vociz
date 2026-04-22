@@ -422,31 +422,43 @@ export default function Meeting({ session: _session }: MeetingProps) {
         </AnimatePresence>
 
         <AnimatePresence>
-          {activeTab !== 'none' && (
+          {activeTab === 'chat' && (
+            <motion.div
+              drag
+              dragMomentum={false}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="fixed bottom-24 right-6 z-50 w-[360px] h-[480px] glass-surface-heavy rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] flex flex-col pointer-events-auto"
+            >
+               <ChatPanel roomCode={normalizedCode!} displayName={displayName} onClose={() => setActiveTab('none')} onNewMessage={handleNewMessage} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {activeTab === 'participants' && (
             <motion.aside
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={cn(
-                "fixed lg:relative right-0 top-0 bottom-0 z-50 lg:z-10",
+                "fixed lg:relative right-0 top-0 bottom-0 z-40 lg:z-10",
                 "w-full sm:w-80 xl:w-96 flex flex-col",
                 "bg-[#050508]/90 backdrop-blur-3xl lg:bg-transparent lg:backdrop-blur-none"
               )}
             >
               <div className="flex-1 glass-surface-heavy rounded-none lg:rounded-[2.5rem] overflow-hidden flex flex-col border-none lg:border lg:border-white/5 shadow-3xl lg:bg-[#090b14]/40 h-full">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
                   <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
-                    <TabsList className="bg-transparent h-full p-0 gap-6">
-                      <TabsTrigger value="chat" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full">Node Comms</TabsTrigger>
-                      <TabsTrigger value="participants" className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full">Directory</TabsTrigger>
-                    </TabsList>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.22em] text-white/90 flex items-center gap-2">
+                       <Users className="w-4 h-4 text-blue-400" />
+                       Node Directory
+                    </h2>
                     <div className="flex items-center gap-2">
-                       {activeTab === 'participants' && (
-                          <Button variant="ghost" size="icon" onClick={exportAttendance} className="w-8 h-8 rounded-full text-slate-500 hover:text-blue-400" title="Export Audit">
-                             <Download className="w-4 h-4" />
-                          </Button>
-                       )}
+                       <Button variant="ghost" size="icon" onClick={exportAttendance} className="w-8 h-8 rounded-full text-slate-500 hover:text-blue-400" title="Export Audit">
+                          <Download className="w-4 h-4" />
+                       </Button>
                        <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')} className="w-8 h-8 rounded-full hover:bg-white/10">
                          <X className="w-4 h-4 text-slate-500" />
                        </Button>
@@ -454,14 +466,8 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   </div>
 
                   <div className="flex-1 overflow-hidden">
-                    <TabsContent value="chat" className="h-full m-0">
-                      <ChatPanel roomCode={normalizedCode!} displayName={displayName} onClose={() => setActiveTab('none')} onNewMessage={handleNewMessage} />
-                    </TabsContent>
-                    <TabsContent value="participants" className="h-full m-0">
-                      <ParticipantsPanel isHost={isHost} />
-                    </TabsContent>
+                    <ParticipantsPanel isHost={isHost} />
                   </div>
-                </Tabs>
               </div>
             </motion.aside>
           )}

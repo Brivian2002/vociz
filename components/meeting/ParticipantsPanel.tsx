@@ -166,10 +166,10 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                     {isHost && !isLocal && (
                        <button 
                         onClick={() => handleMuteParticipant(p)}
-                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-slate-400 hover:bg-red-500 scale-95 hover:scale-100 hover:text-white hover:border-red-500 transition-all ml-0.5"
-                        title="Remote Mute"
+                        className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 scale-95 hover:scale-100 hover:text-white hover:border-red-500 transition-all ml-0.5 shadow-lg shadow-red-500/10 group/mute"
+                        title="Remote Suppress Node"
                       >
-                        <ShieldAlert className="w-4 h-4" />
+                        <ShieldAlert className="w-4 h-4 group-hover/mute:animate-pulse" />
                       </button>
                     )}
                   </div>
