@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon, Zap } from 'lucide-react';
+import { Send, Paperclip, Smile, Image as ImageIcon, File as FileIcon, Zap, X } from 'lucide-react';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -22,7 +22,17 @@ interface Message {
   isRealtimeOnly?: boolean; // Flag if it only came through LiveKit Data
 }
 
-export default function ChatPanel({ roomCode, displayName }: { roomCode: string, displayName: string }) {
+export default function ChatPanel({ 
+  roomCode, 
+  displayName, 
+  onClose, 
+  onNewMessage 
+}: { 
+  roomCode: string, 
+  displayName: string,
+  onClose?: () => void,
+  onNewMessage?: () => void
+}) {
   if (!roomCode) {
     return (
        <div className="flex-1 flex items-center justify-center p-8 text-center bg-[#050508]">
@@ -68,6 +78,9 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
           setMessages(prev => {
             // Deduplicate: Don't add if message exists (likely from Supabase)
             if (prev.some(m => m.id === incomingMsg.id)) return prev;
+            // Trigger unread signaling if not from me
+            const isFromMe = incomingMsg.display_name === displayName;
+            if (!isFromMe && onNewMessage) onNewMessage();
             return [...prev, incomingMsg];
           });
         }
@@ -78,7 +91,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
 
     room.on(RoomEvent.DataReceived, handleData);
     return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, roomCode]);
+  }, [room, roomCode, displayName, onNewMessage]);
 
   useEffect(() => {
     // Initial fetch from Supabase
@@ -113,6 +126,8 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
             const newMsg = payload.new as Message;
             setMessages((prev) => {
                if (prev.some(m => m.id === newMsg.id)) return prev;
+               const isFromMe = newMsg.display_name === displayName;
+               if (!isFromMe && onNewMessage) onNewMessage();
                return [...prev, newMsg];
             });
           }
@@ -123,7 +138,7 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
     return () => {
       if (channel) supabase.removeChannel(channel);
     };
-  }, [roomCode]);
+  }, [roomCode, displayName, onNewMessage]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -261,13 +276,20 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden">
-      <div className="p-3 border-b border-white/10 flex items-center justify-between">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">In-call Messages</h3>
-        <div className="flex items-center gap-1.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-help" title="Powered by LiveKit High-Speed Link">
-           <Zap className="w-3 h-3 text-blue-400" />
-           <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Realtime Link</span>
+    <div className="flex flex-col h-full bg-[#090b14]/60 backdrop-blur-3xl overflow-hidden border-l border-white/5">
+      <div className="p-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+        <div className="flex flex-col">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Secure Node Messages</h3>
+          <div className="flex items-center gap-1.5 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-help" title="Powered by LiveKit High-Speed Link">
+             <Zap className="w-2.5 h-2.5 text-blue-400" />
+             <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Realtime Mesh</span>
+          </div>
         </div>
+        {onClose && (
+          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-white/10">
+            <X className="w-4 h-4 text-slate-500" />
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1 p-3" viewportRef={scrollRef}>
@@ -275,26 +297,26 @@ export default function ChatPanel({ roomCode, displayName }: { roomCode: string,
           {messages.map((msg) => {
             const isMe = msg.display_name === displayName;
             return (
-              <div key={msg.id} className={cn("space-y-1.5", isMe ? "items-end" : "items-start")}>
+              <div key={msg.id} className={cn("space-y-1", isMe ? "items-end" : "items-start")}>
                 <div className={cn("flex items-baseline gap-2 px-1", isMe ? "flex-row-reverse" : "flex-row")}>
-                  <span className={cn("text-[10px] font-bold", isMe ? "text-slate-400" : "text-blue-400")}>
-                    {isMe ? 'Me' : msg.display_name}
+                  <span className={cn("text-[9px] font-black uppercase", isMe ? "text-slate-500" : "text-blue-400")}>
+                    {isMe ? 'Local Node' : msg.display_name}
                   </span>
-                  <span className="text-[8px] text-slate-500 font-mono">
+                  <span className="text-[7px] text-slate-600 font-black">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
                 
                 {msg.message && (
                   <div className={cn(
-                    "relative group max-w-[85%]",
+                    "relative group max-w-[90%]",
                     isMe ? "ml-auto" : "mr-auto"
                   )}>
                     <p className={cn(
-                      "text-xs p-2.5 rounded-2xl border leading-relaxed",
+                      "text-[11px] p-2 rounded-xl border leading-snug font-medium",
                       isMe 
-                        ? "bg-blue-600 border-blue-500 text-white rounded-tr-none shadow-lg shadow-blue-900/20" 
-                        : "bg-white/5 border-white/10 text-slate-300 rounded-tl-none"
+                        ? "bg-blue-600/90 border-blue-500/50 text-white rounded-tr-none shadow-lg shadow-blue-900/20" 
+                        : "bg-white/[0.03] border-white/10 text-slate-300 rounded-tl-none"
                     )}>
                       {msg.message}
                     </p>

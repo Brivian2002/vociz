@@ -9,14 +9,16 @@ import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
 import ParticipantStage from '@/components/meeting/ParticipantStage';
-import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X, Video, Download } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldAlert, MessageSquare, Users, X, Video, Download, MessageCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoomEvent } from 'livekit-client';
 
-function RoomEventListener() {
+import { cn } from '@/lib/utils';
+
+function RoomEventListener({ onNewMessage }: { onNewMessage: () => void }) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
 
@@ -50,6 +52,14 @@ function RoomEventListener() {
           }
         }
 
+        // Global Chat Detection for Unread Counts
+        if (data.type === 'chat') {
+          const isFromMe = (data.display_name === localParticipant.identity);
+          if (!isFromMe) {
+            onNewMessage();
+          }
+        }
+
         if (data.action === 'mute' && data.targetSid === localParticipant.sid) {
           localParticipant.setMicrophoneEnabled(false);
           toast.warning('Host muted your microphone', {
@@ -72,7 +82,7 @@ function RoomEventListener() {
     return () => {
       room.off(RoomEvent.DataReceived, onDataReceived);
     };
-  }, [room, localParticipant]);
+  }, [room, localParticipant, onNewMessage]);
 
   return null;
 }
@@ -121,16 +131,26 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [hasJoined, setHasJoined] = useState(false);
   const [joinTime, setJoinTime] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   const normalizedCode = code?.trim().toLowerCase();
 
   // Responsive state
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
   const isCreator = searchParams.get('host') === 'true';
+
+  useEffect(() => {
+    if (activeTab === 'chat') setUnreadCount(0);
+  }, [activeTab]);
+
+  const handleNewMessage = () => {
+    if (activeTab !== 'chat') {
+      setUnreadCount(prev => prev + 1);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -345,7 +365,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
-      <main className="flex-1 flex overflow-hidden lg:p-6 gap-6 z-10 relative">
+      <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative">
         {/* Main Stage */}
         <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col">
            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
@@ -355,67 +375,99 @@ export default function Meeting({ session: _session }: MeetingProps) {
            <ParticipantStage />
         </div>
 
-        {/* Sidebar (Desktop Only) */}
-        <aside className="hidden lg:flex w-80 xl:w-96 flex-col gap-4">
-          <div className="flex-1 glass-surface-heavy rounded-[2.5rem] overflow-hidden flex flex-col border border-white/5 shadow-3xl bg-[#090b14]/40">
-            <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start rounded-none bg-white/[0.02] border-b border-white/5 h-16 p-0 px-6 gap-8">
-                <TabsTrigger 
-                  value="chat" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
-                >
-                  Messages
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="participants"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
-                >
-                  Directory
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex-1 overflow-hidden">
-                <TabsContent value="chat" className="h-full m-0">
-                  <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
-                </TabsContent>
-                <TabsContent value="participants" className="h-full m-0">
-                  <ParticipantsPanel isHost={isHost} />
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
-        </aside>
-
-        {/* Mobile Overlays - Sliding Drawer Pattern */}
+        {/* Floating Draggable Chat Toggle (Expert Mode) */}
         <AnimatePresence>
-          {activeTab && activeTab !== 'none' && (
-            <motion.div 
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-50 lg:hidden bg-[#050508] flex flex-col"
+          {activeTab !== 'chat' && (
+            <motion.div
+              drag
+              dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+              dragElastic={0.05}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="fixed right-6 top-1/2 -translate-y-1/2 z-50 pointer-events-auto"
             >
-               <div className="flex items-center justify-between px-6 h-16 border-b border-white/5 bg-black">
-                  <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
-                     {activeTab === 'chat' ? 'Secure Node Messages' : 'Node Directory'}
-                  </h2>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setActiveTab('none')}
-                    className="w-10 h-10 rounded-full hover:bg-white/10"
+               <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setActiveTab('chat')}
+                className="w-14 h-14 rounded-2xl bg-[#090b14]/80 backdrop-blur-xl border-white/10 shadow-2xl hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all group relative cursor-grab active:cursor-grabbing"
+              >
+                <div className="absolute inset-0 bg-blue-500/10 rounded-2xl blur-xl group-hover:bg-blue-500/20 transition-all" />
+                <MessageCircle className="w-6 h-6 relative z-10" />
+                
+                {unreadCount > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black rounded-lg min-w-[20px] h-5 px-1 flex items-center justify-center border-2 border-black z-20 shadow-lg"
                   >
-                    <X className="w-5 h-5" />
-                  </Button>
-               </div>
-               <div className="flex-1 overflow-hidden">
-                  {activeTab === 'chat' ? (
-                    <ChatPanel roomCode={normalizedCode!} displayName={displayName} />
-                  ) : (
-                    <ParticipantsPanel isHost={isHost} />
-                  )}
-               </div>
+                    {unreadCount}
+                  </motion.span>
+                )}
+              </Button>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Sidebar / Pop-up Overlay (Integrated Chat & Directory) */}
+        <AnimatePresence>
+          {activeTab !== 'none' && (
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={cn(
+                "fixed lg:relative right-0 top-0 bottom-0 z-50 lg:z-10",
+                "w-full sm:w-80 xl:w-96 flex flex-col",
+                "bg-[#050508]/80 backdrop-blur-2xl lg:bg-transparent lg:backdrop-blur-none"
+              )}
+            >
+              <div className="flex-1 glass-surface-heavy rounded-none lg:rounded-[2.5rem] overflow-hidden flex flex-col border-none lg:border lg:border-white/5 shadow-3xl lg:bg-[#090b14]/40 h-full">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
+                  {/* Expert Tab Header (Hidden on overlay close) */}
+                  <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
+                    <TabsList className="bg-transparent h-full p-0 gap-8">
+                      <TabsTrigger 
+                        value="chat" 
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
+                      >
+                        Node Comms
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="participants"
+                        className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 data-[state=active]:text-white shadow-none transition-all px-0 h-full"
+                      >
+                        Directory
+                      </TabsTrigger>
+                    </TabsList>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setActiveTab('none')}
+                      className="w-10 h-10 rounded-full hover:bg-white/10"
+                    >
+                      <X className="w-5 h-5 text-slate-500" />
+                    </Button>
+                  </div>
+
+                  <div className="flex-1 overflow-hidden">
+                    <TabsContent value="chat" className="h-full m-0">
+                      <ChatPanel 
+                        roomCode={normalizedCode!} 
+                        displayName={displayName} 
+                        onClose={() => setActiveTab('none')}
+                        onNewMessage={handleNewMessage}
+                      />
+                    </TabsContent>
+                    <TabsContent value="participants" className="h-full m-0">
+                      <ParticipantsPanel isHost={isHost} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </div>
+            </motion.aside>
           )}
         </AnimatePresence>
       </main>
@@ -426,7 +478,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
         onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)}
         activeTab={activeTab}
       />
-      <RoomEventListener />
+      <RoomEventListener onNewMessage={handleNewMessage} />
     </LiveKitRoom>
   );
 }
