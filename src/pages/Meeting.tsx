@@ -39,7 +39,17 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 // Global Room Event Listener for Expert Signaling
-function RoomEventListener({ onNewMessage }: { onNewMessage: () => void }) {
+function RoomEventListener({ 
+  onNewMessage, 
+  onChatMessage,
+  roomCode,
+  displayName
+}: { 
+  onNewMessage: () => void,
+  onChatMessage: (msg: Message) => void,
+  roomCode: string,
+  displayName: string
+}) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
 
@@ -88,21 +98,29 @@ function RoomEventListener({ onNewMessage }: { onNewMessage: () => void }) {
           }
         }
 
+        // Chat Data Sync Target
         if (data.type === 'chat') {
-          const isFromMe = (data.display_name === localParticipant.identity);
-          if (!isFromMe) onNewMessage();
-        }
-
-        if (data.action === 'mute' && data.targetSid === localParticipant.sid) {
-          localParticipant.setMicrophoneEnabled(false);
-          toast.warning('Host muted your microphone', { icon: <ShieldAlert className="w-4 h-4 text-red-500" /> });
+          const incomingMsg: Message = {
+            id: data.id || Math.random().toString(),
+            meeting_code: roomCode,
+            user_id: data.user_id || null,
+            display_name: data.display_name || participant?.identity || 'Anonymous',
+            message: data.message,
+            attachments: data.attachments || [],
+            created_at: data.created_at || new Date().toISOString(),
+          };
+          
+          if (incomingMsg.display_name !== displayName) {
+            onNewMessage();
+          }
+          onChatMessage(incomingMsg);
         }
       } catch (e) {}
     };
 
     room.on(RoomEvent.DataReceived, onDataReceived);
     return () => { room.off(RoomEvent.DataReceived, onDataReceived); };
-  }, [room, localParticipant, onNewMessage]);
+  }, [room, localParticipant, onNewMessage, onChatMessage, roomCode, displayName]);
 
   return null;
 }
@@ -144,6 +162,16 @@ interface MeetingProps {
   session?: any;
 }
 
+interface Message {
+  id: string;
+  meeting_code: string;
+  user_id: string | null;
+  display_name: string;
+  message: string;
+  attachments: any[];
+  created_at: string;
+}
+
 export default function Meeting({ session: _session }: MeetingProps) {
   const { code } = useParams();
   const [searchParams] = useSearchParams();
@@ -171,6 +199,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
   const [unreadCount, setUnreadCount] = useState(0);
   const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
+  const [messages, setMessages] = useState<Message[]>([]);
   const isCreator = searchParams.get('host') === 'true';
 
   useEffect(() => {
@@ -182,6 +211,44 @@ export default function Meeting({ session: _session }: MeetingProps) {
   }, [activeTab]);
 
   const handleNewMessage = () => { if (activeTab !== 'chat') setUnreadCount(prev => prev + 1); };
+
+  // Persistent Chat Sync
+  useEffect(() => {
+    if (!hasJoined || !normalizedCode) return;
+
+    const fetchMessages = async () => {
+      if (!isConfigured) return;
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('meeting_code', normalizedCode)
+        .order('created_at', { ascending: true });
+      if (!error && data) setMessages(data);
+    };
+    fetchMessages();
+
+    if (isConfigured) {
+      const channel = supabase
+        .channel(`chat:${normalizedCode}`)
+        .on('postgres_changes', { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'chat_messages', 
+            filter: `meeting_code=eq.${normalizedCode}` 
+          },
+          (payload) => {
+            const newMsg = payload.new as Message;
+            setMessages((prev) => {
+               if (prev.some(m => m.id === newMsg.id)) return prev;
+               const isFromMe = newMsg.display_name === displayName;
+               if (!isFromMe) handleNewMessage();
+               return [...prev, newMsg];
+            });
+          }
+        ).subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
+  }, [hasJoined, normalizedCode, displayName, activeTab]);
 
   // Intent to Join Notification
   useEffect(() => {
@@ -433,7 +500,13 @@ export default function Meeting({ session: _session }: MeetingProps) {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="fixed bottom-28 right-8 z-50 w-[280px] h-[340px] bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto"
             >
-               <ChatPanel roomCode={normalizedCode!} displayName={displayName} onClose={() => setActiveTab('none')} onNewMessage={handleNewMessage} />
+               <ChatPanel 
+                 roomCode={normalizedCode!} 
+                 displayName={displayName} 
+                 onClose={() => setActiveTab('none')} 
+                 messages={messages}
+                 setMessages={setMessages}
+               />
             </motion.div>
           )}
         </AnimatePresence>
@@ -478,7 +551,10 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <RoomAudioRenderer />
       <AudioControlBar isHost={isHost} onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)} activeTab={activeTab} />
-      <RoomEventListener onNewMessage={handleNewMessage} />
+      <RoomEventListener onNewMessage={handleNewMessage} onChatMessage={(msg) => setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      })} roomCode={normalizedCode!} displayName={displayName} />
     </LiveKitRoom>
   );
 }

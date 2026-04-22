@@ -26,12 +26,14 @@ export default function ChatPanel({
   roomCode, 
   displayName, 
   onClose, 
-  onNewMessage 
+  messages,
+  setMessages
 }: { 
   roomCode: string, 
   displayName: string,
   onClose?: () => void,
-  onNewMessage?: () => void
+  messages: Message[],
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
 }) {
   if (!roomCode) {
     return (
@@ -48,76 +50,12 @@ export default function ChatPanel({
     );
   }
 
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
-
-  useEffect(() => {
-    const handleData = (payload: Uint8Array, participant?: any) => {
-      const decoder = new TextDecoder();
-      const str = decoder.decode(payload);
-      try {
-        const data = JSON.parse(str);
-        if (data.type === 'chat') {
-          const incomingMsg: Message = {
-            id: data.id || Math.random().toString(),
-            meeting_code: roomCode,
-            user_id: data.user_id || null,
-            display_name: data.display_name || participant?.identity || 'Anonymous',
-            message: data.message,
-            attachments: data.attachments || [],
-            created_at: data.created_at || new Date().toISOString(),
-          };
-
-          setMessages(prev => {
-            if (prev.some(m => m.id === incomingMsg.id)) return prev;
-            const isFromMe = incomingMsg.display_name === displayName;
-            if (!isFromMe && onNewMessage) onNewMessage();
-            return [...prev, incomingMsg];
-          });
-        }
-      } catch (e) {}
-    };
-
-    room.on(RoomEvent.DataReceived, handleData);
-    return () => { room.off(RoomEvent.DataReceived, handleData); };
-  }, [room, roomCode, displayName, onNewMessage]);
-
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!isConfigured) return;
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*')
-        .eq('meeting_code', roomCode)
-        .order('created_at', { ascending: true });
-      if (!error && data) setMessages(data);
-    };
-    fetchMessages();
-
-    let channel: any = null;
-    if (isConfigured) {
-      channel = supabase
-        .channel(`chat:${roomCode}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `meeting_code=eq.${roomCode}` },
-          (payload) => {
-            const newMsg = payload.new as Message;
-            setMessages((prev) => {
-               if (prev.some(m => m.id === newMsg.id)) return prev;
-               const isFromMe = newMsg.display_name === displayName;
-               if (!isFromMe && onNewMessage) onNewMessage();
-               return [...prev, newMsg];
-            });
-          }
-        ).subscribe();
-    }
-    return () => { if (channel) supabase.removeChannel(channel); };
-  }, [roomCode, displayName, onNewMessage]);
 
   useEffect(() => {
     if (scrollRef.current) {
