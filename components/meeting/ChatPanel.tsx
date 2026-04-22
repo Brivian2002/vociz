@@ -233,18 +233,18 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#090b14]/60 backdrop-blur-3xl overflow-hidden border-l border-white/5">
-      <div className="p-3 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+    <div className="flex flex-col h-full bg-black overflow-hidden border-white/20">
+      <div className="p-3 border-b border-black flex items-center justify-between bg-white">
         <div className="flex flex-col">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80">Node Communications</h3>
-          <div className="flex items-center gap-1.5 opacity-50 hover:opacity-100 transition-all cursor-help" title="Encrypted Peer Proxy">
-             <Zap className="w-2.5 h-2.5 text-blue-400" />
-             <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Realtime P2P Mesh</span>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black">Node Comms</h3>
+          <div className="flex items-center gap-1.5 opacity-50" title="Encrypted Peer Proxy">
+             <Zap className="w-2.5 h-2.5 text-black" />
+             <span className="text-[7px] font-black text-black uppercase tracking-tighter">Realtime P2P</span>
           </div>
         </div>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-white/10">
-            <X className="w-4 h-4 text-slate-500" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-black/10">
+            <X className="w-4 h-4 text-black" />
           </Button>
         )}
       </div>
@@ -268,12 +268,12 @@ export default function ChatPanel({
                 </div>
                 
                 {msg.message && (
-                  <div className={cn("max-w-[92%] message-bubble", isMe ? "ml-auto" : "mr-auto")}>
+                  <div className={cn("max-w-[100%] message-bubble", isMe ? "ml-auto" : "mr-auto")}>
                     <div className={cn(
-                      "text-[10px] p-2 rounded-xl border leading-snug break-words markdown-content",
+                      "text-[10px] p-2 py-1.5 rounded-lg border leading-tight break-words markdown-content",
                       isMe 
-                        ? "bg-blue-600 border-blue-500 text-white rounded-tr-none shadow-xl" 
-                        : "bg-white/[0.04] border-white/10 text-slate-200 rounded-tl-none backdrop-blur-md"
+                        ? "bg-white border-white text-black rounded-tr-none font-medium" 
+                        : "bg-zinc-900 border-white/10 text-white rounded-tl-none"
                     )}>
                       <ReactMarkdown>{msg.message}</ReactMarkdown>
                     </div>
@@ -297,14 +297,14 @@ export default function ChatPanel({
                         <video src={att.url} controls className="w-full max-h-48" />
                       </div>
                     ) : (
-                      <div className="p-3 bg-white/5 rounded-2xl border border-white/10 flex items-center gap-3 backdrop-blur-md">
-                         <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
-                           <FileIcon className="w-5 h-5 text-blue-400" />
+                      <div className="p-2 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
+                         <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center border border-white/10">
+                           <FileIcon className="w-4 h-4 text-white" />
                          </div>
-                         <div className="flex flex-col min-w-0 pr-4">
-                            <span className="text-[10px] font-black truncate text-white/90">{att.name}</span>
-                            <a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black text-blue-400 uppercase tracking-widest mt-1 hover:underline flex items-center gap-1">
-                               <Download className="w-3 h-3" /> Execute Download
+                         <div className="flex flex-col min-w-0 pr-2">
+                            <span className="text-[9px] font-black truncate text-white/90">{att.name}</span>
+                            <a href={att.url} download={att.name} target="_blank" rel="noopener noreferrer" className="text-[7px] font-black text-white/60 uppercase tracking-widest mt-0.5 hover:text-white flex items-center gap-1 transition-colors">
+                               <Download className="w-2.5 h-2.5" /> Handshake Download
                             </a>
                          </div>
                       </div>
@@ -334,45 +334,26 @@ export default function ChatPanel({
           </Button>
       </div>
 
-      <div className="p-3 border-t border-white/10 bg-[#050508]/40 backdrop-blur-xl">
+      <div className="p-2 border-t border-white/10 bg-black">
         <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <div className="relative flex-1">
               <Input 
-                placeholder="Message all nodes..." 
+                placeholder="Message..." 
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className="w-full bg-black/40 border-white/10 rounded-xl px-4 py-2.5 text-xs focus-visible:ring-1 focus-visible:ring-blue-500/30 transition-all pr-12 h-11 placeholder:text-slate-700 font-medium"
+                className="w-full bg-zinc-900 border-white/10 rounded-lg px-3 py-1.5 text-[10px] focus-visible:ring-1 focus-visible:ring-white/30 transition-all h-9 placeholder:text-zinc-600 font-medium"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                <Popover>
-                  <PopoverTrigger>
-                    <div className="text-white/40 hover:text-white/80 transition-colors p-2 cursor-pointer">
-                      <Smile className="w-4 h-4" />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0 border-none bg-transparent shadow-none" side="top" align="end">
-                    <EmojiPicker 
-                      onEmojiClick={onEmojiClick}
-                      theme={Theme.DARK}
-                      lazyLoadEmojis={true}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
             </div>
-
             <Button 
               type="submit" 
               disabled={(!newMessage.trim() && !isUploading)}
-              className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl h-11 px-4 shadow-xl shadow-blue-900/20 active:scale-95 transition-all border-none font-black text-[10px] uppercase tracking-widest"
+              className="bg-white hover:bg-zinc-200 text-black rounded-lg h-9 px-3 active:scale-95 transition-all border-none font-black text-[9px] uppercase"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </Button>
           </div>
-          <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/*,video/*,application/pdf,text/*" />
         </form>
-        <p className="text-[7px] text-center text-slate-700 mt-2 font-black uppercase tracking-[0.2em] leading-none">Session Transients • AES-256 Mesh Encrypted</p>
       </div>
     </div>
   );

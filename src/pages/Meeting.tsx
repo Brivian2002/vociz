@@ -455,7 +455,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                 <div className="absolute inset-0 bg-blue-500/10 rounded-2xl blur-xl group-hover:bg-blue-500/20 transition-all" />
                 <MessageCircle className="w-6 h-6 relative z-10" />
                 {unreadCount > 0 && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black rounded-lg min-w-[22px] h-6 px-1.5 flex items-center justify-center border-2 border-[#050508] z-20 shadow-xl">
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-black rounded-lg min-w-[22px] h-6 px-1.5 flex items-center justify-center border-2 border-black z-20 shadow-xl">
                     {unreadCount}
                   </motion.span>
                 )}
@@ -472,7 +472,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="fixed bottom-24 right-6 z-50 w-[360px] h-[480px] glass-surface-heavy rounded-[2.5rem] overflow-hidden border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] flex flex-col pointer-events-auto"
+              className="fixed bottom-28 right-8 z-50 w-[280px] h-[340px] bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto"
             >
                <ChatPanel roomCode={normalizedCode!} displayName={displayName} onClose={() => setActiveTab('none')} onNewMessage={handleNewMessage} />
             </motion.div>
