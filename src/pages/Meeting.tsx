@@ -26,7 +26,8 @@ import {
   ShieldCheck, 
   Scale, 
   MousePointer2,
-  Bell
+  Bell,
+  MicOff
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -139,6 +140,10 @@ function MeetingTimer() {
   );
 }
 
+interface MeetingProps {
+  session?: any;
+}
+
 export default function Meeting({ session: _session }: MeetingProps) {
   const { code } = useParams();
   const [searchParams] = useSearchParams();
@@ -191,6 +196,22 @@ export default function Meeting({ session: _session }: MeetingProps) {
     if (!displayName.trim()) return;
     const channel = supabase.channel(`intent:${normalizedCode}`);
     await channel.send({ type: 'broadcast', event: 'joining', payload: { name: displayName } });
+  };
+
+  const handlePWAInstall = async () => {
+    if (!deferredPrompt) {
+      toast.info('PWA Synchronization Pending', {
+         description: 'The browser is still initializing the local bundle. Try again in 5 seconds.',
+         icon: <Zap className="w-4 h-4 text-blue-400" />
+      });
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      toast.success('PWA NODE INSTALLED');
+      setDeferredPrompt(null);
+    }
   };
 
   const handleJoin = async () => {

@@ -1,5 +1,5 @@
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
-import { Mic, MicOff, ShieldCheck, Users, Wifi, WifiOff, Activity } from 'lucide-react';
+import { Mic, MicOff, ShieldCheck, Users, Wifi, WifiOff, Activity, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';

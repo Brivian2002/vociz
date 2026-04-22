@@ -129,6 +129,10 @@ export default function ChatPanel({
     setNewMessage(prev => `${prev}${tag}${tag}`);
   };
 
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+    setNewMessage(prev => prev + emojiData.emoji);
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -245,7 +249,10 @@ export default function ChatPanel({
         )}
       </div>
 
-      <ScrollArea className="flex-1 p-3" viewportRef={scrollRef}>
+      <div 
+        ref={scrollRef}
+        className="flex-1 p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20 transition-all"
+      >
         <div className="space-y-4">
           {messages.map((msg) => {
             const isMe = msg.display_name === displayName;
@@ -308,7 +315,7 @@ export default function ChatPanel({
             );
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Advanced Formatting Toolbar */}
       <div className="px-3 py-1.5 border-t border-white/5 bg-white/[0.01] flex items-center gap-1">
@@ -339,10 +346,10 @@ export default function ChatPanel({
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2">
                 <Popover>
-                  <PopoverTrigger asChild>
-                    <button type="button" className="text-white/40 hover:text-white/80 transition-colors p-2">
+                  <PopoverTrigger>
+                    <div className="text-white/40 hover:text-white/80 transition-colors p-2 cursor-pointer">
                       <Smile className="w-4 h-4" />
-                    </button>
+                    </div>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0 border-none bg-transparent shadow-none" side="top" align="end">
                     <EmojiPicker 
