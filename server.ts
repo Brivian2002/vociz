@@ -43,6 +43,7 @@ async function startServer() {
         canPublish: true,
         canSubscribe: true,
         canPublishData: true,
+        canUpdateOwnMetadata: true,
         roomAdmin: !!isHost, // Grant admin rights if requested as host
       });
 
