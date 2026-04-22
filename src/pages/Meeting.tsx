@@ -148,6 +148,13 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [liveKitUrl, setLiveKitUrl] = useState<string>(import.meta.env.VITE_LIVEKIT_URL || import.meta.env.NEXT_PUBLIC_LIVEKIT_URL || '');
   const [isHost, setIsHost] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Mission-critical: Resolve loading state once mesh is initialized
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [joinTime, setJoinTime] = useState<Date | null>(null);

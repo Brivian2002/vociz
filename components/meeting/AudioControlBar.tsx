@@ -222,7 +222,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
         </button>
       </div>
       
-      {/* Network Status Indicator */}
+      {/* Realtime Network Status Indicator */}
       <div className="hidden md:flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
          <div className={cn(
            "flex items-center gap-3 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full border transition-all duration-500",
@@ -230,15 +230,30 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
          )}>
             <div className="flex flex-col text-right">
                <span className="text-[7px] uppercase font-black text-slate-500 tracking-tighter leading-none mb-0.5">Link Path: 256-BIT AES</span>
-               <span className={cn("text-[10px] font-black font-mono leading-none", isFocusMode ? "text-emerald-400" : "text-amber-500")}>
-                 {isFocusMode ? 'ACTIVE CONNECTION' : 'FOCUS LOST: WAITING'}
-               </span>
-            </div>
-            <div className="flex gap-0.5 items-end h-2.5">
-               <motion.div animate={{ height: isFocusMode ? [4, 6, 4] : 4 }} className="w-0.5 bg-current" />
-               <motion.div animate={{ height: isFocusMode ? [6, 10, 6] : 4 }} className="w-0.5 bg-current" />
-               <motion.div animate={{ height: isFocusMode ? [10, 4, 10] : 4 }} className="w-0.5 bg-current" />
-               <motion.div animate={{ height: isFocusMode ? [8, 12, 8] : 4 }} className="w-0.5 bg-current" />
+               <div className="flex items-center gap-2">
+                 <span className={cn("text-[10px] font-black font-mono leading-none", 
+                   localParticipant.connectionQuality === 'excellent' ? "text-emerald-400" :
+                   localParticipant.connectionQuality === 'good' ? "text-blue-400" : "text-amber-500"
+                 )}>
+                   {isFocusMode ? (localParticipant.connectionQuality?.toUpperCase() || 'CONNECTING') : 'FOCUS LOST'}
+                 </span>
+                 <div className="flex gap-0.5 items-end h-2.5">
+                    {[...Array(4)].map((_, i) => {
+                      const quality = localParticipant.connectionQuality;
+                      const bars = quality === 'excellent' ? 4 : quality === 'good' ? 3 : quality === 'poor' ? 1 : 0;
+                      return (
+                        <div 
+                          key={i} 
+                          className={cn(
+                            "w-0.5 rounded-full transition-all duration-500",
+                            i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-2.5",
+                            i < bars ? (bars > 2 ? "bg-emerald-500" : "bg-amber-500") : "bg-white/10"
+                          )} 
+                        />
+                      );
+                    })}
+                 </div>
+               </div>
             </div>
          </div>
       </div>

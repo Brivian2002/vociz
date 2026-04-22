@@ -1,7 +1,9 @@
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
-import { Mic, MicOff, ShieldCheck, Users } from 'lucide-react';
+import { Mic, MicOff, ShieldCheck, Users, Wifi, WifiOff, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { ConnectionQuality } from 'livekit-client';
 import MetalAvatar from './MetalAvatar';
 
 export default function ParticipantStage() {
@@ -13,6 +15,19 @@ export default function ParticipantStage() {
     const timer = setInterval(() => setNow(Date.now()), 10000);
     return () => clearInterval(timer);
   }, []);
+
+  const getConnectionInfo = (quality: ConnectionQuality) => {
+    switch (quality) {
+      case ConnectionQuality.Excellent:
+        return { color: "text-emerald-500", label: "Ultra", icon: <Wifi className="w-2.5 h-2.5" />, bars: 4 };
+      case ConnectionQuality.Good:
+        return { color: "text-blue-500", label: "Stable", icon: <Wifi className="w-2.5 h-2.5" />, bars: 3 };
+      case ConnectionQuality.Poor:
+        return { color: "text-amber-500", label: "Jitter", icon: <Activity className="w-2.5 h-2.5" />, bars: 1 };
+      default:
+        return { color: "text-red-500", label: "Offline", icon: <WifiOff className="w-2.5 h-2.5" />, bars: 0 };
+    }
+  };
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -30,15 +45,15 @@ export default function ParticipantStage() {
                </div>
             </div>
             <div className="space-y-2 max-w-xs">
-               <h3 className="text-xl font-black text-white tracking-[0.1em] uppercase uppercase">Link Active</h3>
+               <h3 className="text-xl font-black text-white tracking-[0.1em] uppercase">PEER-TO-PEER MESH</h3>
                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest leading-relaxed">
-                  Encryption established. Scanning for peer nodes.
+                  Encrypted Bridge Established. Awaiting peer synchronization.
                </p>
             </div>
             
-            <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20 animate-pulse">
-               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-               <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] leading-none">Scanning encrypted path...</span>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/5">
+               <div className="w-1.5 h-1.5 bg-blue-500 animate-ping rounded-full" />
+               <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] leading-none">IDLE: Listening for neighbors</span>
             </div>
           </motion.div>
         ) : (
@@ -87,15 +102,28 @@ export default function ParticipantStage() {
                         <Mic className={cn("w-3.5 h-3.5", isSpeaking && "animate-pulse")} />
                       </div>
                     )}
-                    <div className="px-2 py-1 bg-black/40 rounded-lg border border-white/5 backdrop-blur-md">
-                       <span className="text-[7px] font-black font-mono text-slate-400 uppercase tracking-tighter">Strength</span>
-                       <div className="flex gap-0.5 mt-0.5">
-                          <div className="w-0.5 h-1 bg-emerald-500" />
-                          <div className="w-0.5 h-1.5 bg-emerald-500" />
-                          <div className="w-0.5 h-2 bg-emerald-500" />
-                          <div className="w-0.5 h-2.5 bg-emerald-500" />
-                       </div>
-                    </div>
+            <div className="px-2 py-1 bg-black/40 rounded-lg border border-white/5 backdrop-blur-md">
+               {(() => {
+                 const conn = getConnectionInfo(p.connectionQuality);
+                 return (
+                   <div className={cn("flex flex-col items-center gap-0.5", conn.color)}>
+                     <span className="text-[6px] font-black uppercase tracking-tighter opacity-70">{conn.label}</span>
+                     <div className="flex gap-0.5 mt-0.5">
+                       {[...Array(4)].map((_, i) => (
+                         <div 
+                           key={i} 
+                           className={cn(
+                             "w-0.5 rounded-full",
+                             i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-2.5",
+                             i < conn.bars ? "bg-current" : "bg-white/10"
+                           )} 
+                         />
+                       ))}
+                     </div>
+                   </div>
+                 );
+               })()}
+            </div>
                   </div>
 
                   <div className="relative mb-6">
