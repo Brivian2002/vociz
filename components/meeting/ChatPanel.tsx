@@ -123,8 +123,25 @@ export default function ChatPanel({
       toast.error('File sharing requires Supabase configuration');
       return;
     }
+
+    // Strict Node Validation: Only Images, Documents, and Audio
+    const allowedTypes = [
+      'image/', 
+      'audio/', 
+      'application/pdf', 
+      'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain'
+    ];
+    
+    const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
+    if (!isAllowed) {
+      toast.error('Unauthorized file type. Node only accepts Images, Documents, and Audio.');
+      return;
+    }
+
     if (file.size > 20 * 1024 * 1024) {
-      toast.error('File too large (max 20MB)');
+      toast.error('Transmission quota exceeded (max 20MB)');
       return;
     }
 
@@ -140,7 +157,7 @@ export default function ChatPanel({
 
       let type = 'file';
       if (file.type.startsWith('image/')) type = 'image';
-      else if (file.type.startsWith('video/')) type = 'video';
+      else if (file.type.startsWith('audio/')) type = 'audio';
 
       const attachment = { name: file.name, url: publicUrl, type };
 
@@ -164,28 +181,37 @@ export default function ChatPanel({
       });
 
     } catch (error: any) {
-      toast.error('Upload failed');
+      toast.error('Transmission failure');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   return (
     <div className="flex flex-col h-full bg-black overflow-hidden border-white/20">
-      <div className="p-3 border-b border-black flex items-center justify-between bg-white">
+      <div className="p-3 border-b border-black flex items-center justify-between bg-white text-black shadow-sm">
         <div className="flex flex-col">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-black">Node Comms</h3>
-          <div className="flex items-center gap-1.5 opacity-50" title="Encrypted Peer Proxy">
-             <Zap className="w-2.5 h-2.5 text-black" />
-             <span className="text-[7px] font-black text-black uppercase tracking-tighter">Realtime P2P</span>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">IN CALL MESSAGE</h3>
+          <div className="flex items-center gap-1.5 opacity-40">
+             <Zap className="w-2.5 h-2.5" />
+             <span className="text-[7px] font-black uppercase tracking-tighter italic">Secure Node Sync</span>
           </div>
         </div>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-black/10">
-            <X className="w-4 h-4 text-black" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-black/5 text-black">
+            <X className="w-4 h-4" />
           </Button>
         )}
       </div>
+
+      <input 
+        type="file" 
+        className="hidden" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload}
+        accept="image/*,audio/*,.pdf,.doc,.docx,.txt"
+      />
 
       <div 
         ref={scrollRef}
@@ -230,10 +256,6 @@ export default function ChatPanel({
                           onClick={() => window.open(att.url, '_blank')}
                         />
                       </div>
-                    ) : att.type === 'video' ? (
-                      <div className="rounded-2xl border border-white/10 overflow-hidden bg-black shadow-2xl">
-                        <video src={att.url} controls className="w-full max-h-48" />
-                      </div>
                     ) : (
                       <div className="p-2 bg-white/5 rounded-xl border border-white/10 flex items-center gap-2">
                          <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center border border-white/10">
@@ -268,7 +290,7 @@ export default function ChatPanel({
           </Button>
           <div className="w-px h-3 bg-white/10 mx-1" />
           <Button variant="ghost" size="icon" className="w-7 h-7 hover:bg-white/5" onClick={() => fileInputRef.current?.click()}>
-            <VideoIcon className="w-3 h-3 text-slate-500" />
+            <Paperclip className="w-3 h-3 text-slate-500" />
           </Button>
       </div>
 

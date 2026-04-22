@@ -92,12 +92,11 @@ export default function MetalAvatar({ name, size = 100, className, isSpeaking }:
         {initials}
       </span>
 
-      {/* Top Edge Highlight for Figma Depth */}
+      {/* Circular Glass Polish */}
       <div 
-        className="absolute top-0 inset-x-0 h-1/2 rounded-full opacity-10 pointer-events-none"
+        className="absolute inset-0 rounded-full opacity-10 pointer-events-none"
         style={{ 
-          background: `linear-gradient(to bottom, #FFFFFF 0%, transparent 100%)`,
-          clipPath: 'circle(50% at 50% 10%)'
+          background: `linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%, rgba(0,0,0,0.2) 100%)`,
         }}
       />
     </div>
