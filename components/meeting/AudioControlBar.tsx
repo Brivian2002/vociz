@@ -32,6 +32,15 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import WaveformVisualizer from './WaveformVisualizer';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { Drawer } from 'vaul';
 import QRCode from 'react-qr-code';
 
@@ -273,30 +282,34 @@ export default function AudioControlBar({
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 flex flex-col items-center gap-4 pointer-events-none" role="contentinfo">
-      <AnimatePresence>
-        {showExitConfirm && (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="glass-surface-heavy p-4 rounded-2xl border border-red-500/30 mb-2 pointer-events-auto flex items-center gap-4 bg-black/80"
-            role="alertdialog"
-            aria-labelledby="exit-confirm-title"
-          >
-            <div className="flex flex-col gap-1">
-              <span id="exit-confirm-title" className="text-[10px] font-black uppercase text-white tracking-widest flex items-center gap-2">
-                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-                Terminate Link?
-              </span>
-              <span className="text-[8px] text-slate-500 uppercase font-bold">You will be disconnected from the mesh.</span>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowExitConfirm(false)} className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 h-8">Cancel</Button>
-              <Button size="sm" onClick={confirmLeave} className="text-[8px] font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white h-8 px-4 rounded-lg">Disconnect</Button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Dialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <DialogContent className="border-red-500/30 bg-black/90 backdrop-blur-xl max-w-xs md:max-w-sm rounded-[2rem]">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2 italic">
+              <AlertCircle className="w-5 h-5 text-red-500" />
+              Terminate Link?
+            </DialogTitle>
+            <DialogDescription className="text-slate-500">
+              You will be disconnected from the encrypted mesh node. All synchronization will cease immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="bg-transparent border-none mt-2">
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowExitConfirm(false)} 
+              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 h-12 rounded-xl"
+            >
+              Cancel HANDSHAKE
+            </Button>
+            <Button 
+              onClick={confirmLeave} 
+              className="text-[10px] font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white h-12 px-6 rounded-xl shadow-lg shadow-red-600/20"
+            >
+              Disconnect Node
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto relative">
         {/* Toggle Chat */}
@@ -373,6 +386,10 @@ export default function AudioControlBar({
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
             <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[3rem] p-8 flex flex-col gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
+              <VisuallyHidden>
+                <Drawer.Title>More Meeting Options</Drawer.Title>
+                <Drawer.Description>Advanced controls for microphone, screen sharing, and environment settings.</Drawer.Description>
+              </VisuallyHidden>
               <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-2" />
               
               <div className="space-y-8 overflow-y-auto pb-8">

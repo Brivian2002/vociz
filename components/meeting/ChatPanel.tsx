@@ -372,28 +372,28 @@ export default function ChatPanel({
 
       {/* Advanced Formatting Toolbar */}
       <div className="px-3 py-1.5 border-t border-white/5 bg-white/[0.01] flex items-center gap-1">
-          <Button variant="ghost" size="icon" title="Bold" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('**')}>
-            <Bold className="w-3 h-3 text-slate-500" />
+          <Button aria-label="Bold text" variant="ghost" size="icon" title="Bold" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('**')}>
+            <Bold className="w-3 h-3 text-slate-500" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="icon" title="Italic" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('*')}>
-            <Italic className="w-3 h-3 text-slate-500" />
+          <Button aria-label="Italic text" variant="ghost" size="icon" title="Italic" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('*')}>
+            <Italic className="w-3 h-3 text-slate-500" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="icon" title="Strikethrough" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('~~')}>
-            <Strikethrough className="w-3 h-3 text-slate-500" />
-          </Button>
-          <div className="w-px h-3 bg-white/10 mx-1" />
-          <Button variant="ghost" size="icon" title="Inline Code" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('`')}>
-            <Code className="w-3 h-3 text-slate-500" />
-          </Button>
-          <Button variant="ghost" size="icon" title="Code Block" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('```\n', '\n```')}>
-            <SquareCode className="w-3 h-3 text-slate-500" />
-          </Button>
-          <Button variant="ghost" size="icon" title="Insert Link" className="w-7 h-7 hover:bg-white/5" onClick={insertLink}>
-            <Link className="w-3 h-3 text-slate-500" />
+          <Button aria-label="Strikethrough text" variant="ghost" size="icon" title="Strikethrough" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('~~')}>
+            <Strikethrough className="w-3 h-3 text-slate-500" aria-hidden="true" />
           </Button>
           <div className="w-px h-3 bg-white/10 mx-1" />
-          <Button variant="ghost" size="icon" title="Attach File" className="w-7 h-7 hover:bg-white/5" onClick={() => fileInputRef.current?.click()}>
-            <Paperclip className="w-3 h-3 text-slate-500" />
+          <Button aria-label="Insert inline code" variant="ghost" size="icon" title="Inline Code" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('`')}>
+            <Code className="w-3 h-3 text-slate-500" aria-hidden="true" />
+          </Button>
+          <Button aria-label="Insert code block" variant="ghost" size="icon" title="Code Block" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('```\n', '\n```')}>
+            <SquareCode className="w-3 h-3 text-slate-500" aria-hidden="true" />
+          </Button>
+          <Button aria-label="Insert link" variant="ghost" size="icon" title="Insert Link" className="w-7 h-7 hover:bg-white/5" onClick={insertLink}>
+            <Link className="w-3 h-3 text-slate-500" aria-hidden="true" />
+          </Button>
+          <div className="w-px h-3 bg-white/10 mx-1" />
+          <Button aria-label="Attach file" variant="ghost" size="icon" title="Attach File" className="w-7 h-7 hover:bg-white/5" onClick={() => fileInputRef.current?.click()}>
+            <Paperclip className="w-3 h-3 text-slate-500" aria-hidden="true" />
           </Button>
       </div>
 

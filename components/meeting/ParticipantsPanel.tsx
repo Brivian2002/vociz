@@ -123,14 +123,18 @@ export default function ParticipantsPanel({
               {participants.length}
             </span>
           </div>
-          <button className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 transition-colors">
-            <Search className="w-4 h-4" />
+          <button 
+            type="button"
+            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 transition-colors"
+            aria-label="Search participants"
+          >
+            <Search className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
         <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Encrypted Peer Mesh</p>
       </div>
 
-      <ScrollArea className="flex-1" role="region" aria-label="Participant List">
+      <ScrollArea className="flex-1" role="region" aria-label="Participant List" aria-live="polite">
         <div className="p-4 space-y-4">
           {/* Waiting Room Section */}
           {isHost && waitingParticipants.length > 0 && (

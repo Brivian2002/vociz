@@ -38,6 +38,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RoomEvent } from 'livekit-client';
 import { cn } from '@/lib/utils';
 import { Drawer } from 'vaul';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -789,6 +790,10 @@ export default function Meeting({ session: _session }: MeetingProps) {
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
             <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#050508] border-t border-white/10 rounded-t-[3rem] z-[100] outline-none flex flex-col">
+              <VisuallyHidden>
+                <Drawer.Title>Meeting Panels</Drawer.Title>
+                <Drawer.Description>Participants and Chat controls for the current mesh session.</Drawer.Description>
+              </VisuallyHidden>
               <div className="mx-auto w-12 h-1 bg-white/10 rounded-full my-4" />
               <div className="flex-1 overflow-hidden">
                  {activeTab === 'chat' && (
