@@ -196,88 +196,75 @@ export default function ParticipantsPanel({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     className={cn(
-                      "flex items-center gap-4 p-3 rounded-full transition-all duration-500 group relative border",
+                      "flex items-center gap-4 p-4 rounded-[2rem] transition-all duration-500 group relative border",
                       isLocal ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.02] border-transparent hover:border-white/5",
                       isActiveSpeaker && "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_20px_rgba(16,185,129,0.1)]",
                       isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"
                     )}
                   >
                     <div className="relative z-10 shrink-0">
-                      <MetalAvatar name={displayName} size={42} isSpeaking={isActiveSpeaker} />
+                      <MetalAvatar 
+                        name={displayName} 
+                        size={52} 
+                        isSpeaking={isActiveSpeaker} 
+                        isHost={p.metadata?.includes('host')}
+                        isMuted={isMuted}
+                      />
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                          <h3 className={cn(
-                           "text-xs font-black uppercase tracking-tight truncate",
+                           "text-[13px] font-black uppercase tracking-tight truncate",
                            isActiveSpeaker ? "text-emerald-400" : "text-white"
                          )}>
                            {displayName}
                          </h3>
-                         {isLocal && <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">You</span>}
+                         {isLocal && <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-2 py-0.5 rounded-full bg-blue-500/5">Local Node</span>}
                       </div>
                       
-                      <div className="flex flex-col gap-0.5 mt-0.5">
-                         <div className={cn("flex items-center gap-1 text-[8px] font-black uppercase tracking-widest", conn.color)}>
+                      <div className="flex flex-col gap-0.5 mt-1">
+                         <div className={cn("flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest", conn.color)}>
                            {conn.icon}
-                           {conn.label}
-                           {metadata.joinTimestamp && (
-                              <span className="text-slate-600 ml-0.5 opacity-50">• {Math.floor((Date.now() - metadata.joinTimestamp)/60000)}m Ago</span>
-                           )}
+                           <span className="opacity-80">{conn.label}</span>
                          </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 relative z-10">
-                      {isHandRaised && (
-                         <button
-                           onClick={() => isHost && handleLowerHand(p)}
-                           aria-label={isHost ? `Lower hand for ${displayName}` : `${displayName} has their hand raised`}
-                           className={cn(
-                             "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
-                             isHost ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
-                           )}
-                         >
-                           <Hand className="w-4 h-4" />
-                         </button>
-                      )}
-                      
-                      <div className={cn(
-                        "w-9 h-9 rounded-xl flex items-center justify-center border transition-all relative overflow-hidden",
-                        isMuted ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
-                        isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
-                      )}>
-                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className={cn("w-4 h-4", isActiveSpeaker && "animate-pulse")} />}
-                      </div>
+                    <div className="flex items-center gap-2 relative z-10">
+                      {/* Individual Mute/Suppress Button - Large for Mobile */}
+                      <button 
+                        onClick={() => {
+                          if (isHost && !isLocal) {
+                            if (isMuted) handleUnmuteParticipant(p);
+                            else handleMuteParticipant(p);
+                          } else {
+                            // Local-only UX feedback for non-hosts
+                            toast.info("Local suppressing not supported in mesh mode.", {
+                               description: "Only hosts can regulate mesh audio nodes."
+                            });
+                          }
+                        }}
+                        aria-label={isMuted ? "Unmute node" : "Suppress node"}
+                        className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all active:scale-90",
+                          isMuted 
+                            ? "bg-red-500/20 border-red-500/40 text-red-500" 
+                            : "bg-emerald-500/20 border-emerald-500/40 text-emerald-500",
+                          isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-xl"
+                        )}
+                      >
+                        {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className={cn("w-5 h-5", isActiveSpeaker && "animate-pulse")} />}
+                      </button>
 
                       {isHost && !isLocal && (
-                        <div className="flex items-center gap-1 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {isMuted ? (
-                            <button 
-                              onClick={() => handleUnmuteParticipant(p)}
-                              aria-label={`Request unmute for ${displayName}`}
-                              className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-lg shadow-blue-500/10"
-                            >
-                              <Mic className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => handleMuteParticipant(p)}
-                              aria-label={`Remote suppress node: Mute ${displayName}`}
-                              className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-orange-500/10"
-                            >
-                              <MicOff className="w-4 h-4" />
-                            </button>
-                          )}
-                          
-                          <button 
-                            onClick={() => handleRemoveParticipant(p)}
-                            aria-label={`Terminate node link: Remove ${displayName}`}
-                            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
-                          >
-                            <UserMinus className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button 
+                          onClick={() => handleRemoveParticipant(p)}
+                          aria-label={`Terminate node link: Remove ${displayName}`}
+                          className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90"
+                        >
+                          <UserMinus className="w-5 h-5" />
+                        </button>
                       )}
                     </div>
                   </motion.div>

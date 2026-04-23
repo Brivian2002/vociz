@@ -28,7 +28,8 @@ import {
   MousePointer2,
   Bell,
   MicOff,
-  UserPlus
+  UserPlus,
+  Target
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'motion/react';
 import { RoomEvent } from 'livekit-client';
 import { cn } from '@/lib/utils';
+import { Drawer } from 'vaul';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -226,7 +228,44 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
   const [unreadCount, setUnreadCount] = useState(0);
   const [reactions, setReactions] = useState<{id: string, emoji: string, sender: string}[]>([]);
+  const [isGridView, setIsGridView] = useState(true);
+  const [isHighContrast, setIsHighContrast] = useState(false);
+  const [preJoinNotif, setPreJoinNotif] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('voicemeet_guided'));
+
+  const closeGuide = () => {
+    setShowGuide(false);
+    localStorage.setItem('voicemeet_guided', 'true');
+  };
+
+  // Pre-join signaling (Broadcast typing/intent)
+  useEffect(() => {
+    if (!normalizedCode) return;
+    const channel = supabase.channel(`signal:${normalizedCode}`, {
+      config: { broadcast: { self: false } }
+    });
+
+    channel
+      .on('broadcast', { event: 'intent' }, ({ payload }) => {
+        setPreJoinNotif(payload.message);
+        setTimeout(() => setPreJoinNotif(null), 3000);
+      })
+      .subscribe();
+
+    return () => { channel.unsubscribe(); };
+  }, [normalizedCode]);
+
+  // Broadcast intent as user types or lands
+  useEffect(() => {
+    if (!normalizedCode || !displayName || hasJoined) return;
+    const channel = supabase.channel(`signal:${normalizedCode}`);
+    channel.send({
+      type: 'broadcast',
+      event: 'intent',
+      payload: { message: `${displayName.split(' ')[0]} is preparing to join...` }
+    });
+  }, [displayName, normalizedCode, hasJoined]);
 
   // Persistent Registry
   useEffect(() => {
@@ -598,10 +637,61 @@ export default function Meeting({ session: _session }: MeetingProps) {
       token={token!}
       serverUrl={liveKitUrl}
       connect={true}
-      className="flex flex-col h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative"
+      className={cn(
+        "flex flex-col h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative",
+        isHighContrast && "grayscale contrast-125"
+      )}
     >
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[150px] pointer-events-none z-0"></div>
+
+      {/* Welcome Guide Overlay */}
+      <AnimatePresence>
+        {showGuide && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-xl flex items-center justify-center p-8"
+          >
+            <div className="max-w-xs w-full text-center space-y-8 glass-surface-heavy p-10 rounded-[3rem] border border-white/10">
+               <div className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center mx-auto shadow-2xl relative">
+                  <div className="absolute inset-0 bg-blue-400 blur-xl opacity-20 animate-pulse" />
+                  <ShieldCheck className="w-10 h-10 text-white relative z-10" />
+               </div>
+               <div className="space-y-4">
+                  <h3 className="text-2xl font-black uppercase text-white italic tracking-tight">Mesh Guide</h3>
+                  <div className="flex flex-col gap-4 text-left">
+                     <div className="flex gap-4">
+                        <div className="w-6 h-6 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-black">1</div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Share your invite to link peers.</p>
+                     </div>
+                     <div className="flex gap-4">
+                        <div className="w-6 h-6 shrink-0 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-black">2</div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Collaborate with real-time audio.</p>
+                     </div>
+                  </div>
+               </div>
+               <Button onClick={closeGuide} className="w-full h-14 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest active:scale-95 transition-all">Acknowledge</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pre-join Intent Notifications */}
+      <AnimatePresence>
+        {preJoinNotif && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 backdrop-blur-xl rounded-full text-[10px] font-black uppercase tracking-widest text-emerald-400 shadow-2xl flex items-center gap-2"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            {preJoinNotif}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Emoji Layer */}
       <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
@@ -632,7 +722,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
            <div className="absolute top-4 right-6 z-40">
               <MeetingTimer />
            </div>
-           <ParticipantStage />
+           <ParticipantStage isGridView={isGridView} />
         </div>
 
         <section aria-live="polite" className="sr-only">
@@ -640,106 +730,108 @@ export default function Meeting({ session: _session }: MeetingProps) {
            {messages.length > 0 && `New message from ${messages[messages.length - 1].display_name}`}
         </section>
 
-        <AnimatePresence>
-          {activeTab !== 'chat' && (
-            <motion.div
-              drag
-              dragConstraints={{ left: -200, right: 0, top: -400, bottom: 400 }}
-              dragElastic={0.05}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              className="fixed right-6 top-1/2 -translate-y-1/2 z-50 pointer-events-auto"
-            >
-               <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setActiveTab('chat')}
-                aria-label={`Open messages. ${unreadCount > 0 ? unreadCount + ' unread' : ''}`}
-                className="w-14 h-14 rounded-2xl bg-[#090b14]/80 backdrop-blur-xl border-white/10 shadow-2xl hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all group relative cursor-grab active:cursor-grabbing border-2"
+        {/* Side Panels - Desktop Sidebar Style */}
+        <div className="hidden lg:flex gap-4">
+          <AnimatePresence>
+            {activeTab === 'chat' && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 320, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="overflow-hidden bg-[#090b14]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
               >
-                <div className="absolute inset-0 bg-blue-500/10 rounded-2xl blur-xl group-hover:bg-blue-500/20 transition-all" />
-                <MessageCircle className="w-6 h-6 relative z-10" aria-hidden="true" />
-                {unreadCount > 0 && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-black rounded-lg min-w-[22px] h-6 px-1.5 flex items-center justify-center border-2 border-black z-20 shadow-xl" aria-hidden="true">
-                    {unreadCount}
-                  </motion.span>
-                )}
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                 <ChatPanel 
+                   roomCode={normalizedCode!} 
+                   displayName={displayName} 
+                   onClose={() => setActiveTab('none')} 
+                   messages={messages}
+                   setMessages={setMessages}
+                 />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <AnimatePresence>
-          {activeTab === 'chat' && (
-            <motion.div
-              drag
-              dragMomentum={false}
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              role="complementary"
-              aria-label="In-Call Messages"
-              className="fixed bottom-28 right-8 z-50 w-[280px] h-[400px] bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto"
-            >
-               <ChatPanel 
-                 roomCode={normalizedCode!} 
-                 displayName={displayName} 
-                 onClose={() => setActiveTab('none')} 
-                 messages={messages}
-                 setMessages={setMessages}
-               />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence mode="wait">
-          {activeTab === 'participants' && (
-            <motion.aside
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              role="complementary"
-              aria-label="Node Directory"
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={cn(
-                "fixed lg:relative right-0 top-0 bottom-0 z-40 lg:z-10",
-                "w-full sm:w-80 xl:w-96 flex flex-col",
-                "bg-[#050508]/90 backdrop-blur-3xl lg:bg-transparent lg:backdrop-blur-none"
-              )}
-            >
-              <div className="flex-1 glass-surface-heavy rounded-none lg:rounded-[2.5rem] overflow-hidden flex flex-col border-none lg:border lg:border-white/5 shadow-3xl lg:bg-[#090b14]/40 h-full">
-                  <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.22em] text-white/90 flex items-center gap-2">
-                       <Users className="w-4 h-4 text-blue-400" />
-                       Node Directory
-                    </h2>
-                    <div className="flex items-center gap-2">
-                       <Button variant="ghost" size="icon" onClick={exportAttendance} className="w-8 h-8 rounded-full text-slate-500 hover:text-blue-400" title="Export Audit">
-                          <Download className="w-4 h-4" />
-                       </Button>
-                       <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')} className="w-8 h-8 rounded-full hover:bg-white/10">
-                         <X className="w-4 h-4 text-slate-500" />
-                       </Button>
+          <AnimatePresence>
+            {activeTab === 'participants' && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 320, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                className="overflow-hidden bg-[#090b14]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
+              >
+                  <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
+                      <h2 className="text-[10px] font-black uppercase tracking-[0.22em] text-white/90">Node Directory</h2>
+                      <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')} className="w-8 h-8 rounded-full hover:bg-white/10">
+                        <X className="w-4 h-4 text-slate-500" />
+                      </Button>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <ParticipantsPanel 
+                        isHost={isHost} 
+                        waitingParticipants={waitingParticipants}
+                        onApprove={handleApprove}
+                        onDeny={handleDeny}
+                      />
                     </div>
                   </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-                  <div className="flex-1 overflow-hidden">
-                    <ParticipantsPanel 
-                      isHost={isHost} 
-                      waitingParticipants={waitingParticipants}
-                      onApprove={handleApprove}
-                      onDeny={handleDeny}
+        {/* Side Panels - Mobile Drawers */}
+        <Drawer.Root 
+          open={activeTab !== 'none' && typeof window !== 'undefined' && window.innerWidth < 1024} 
+          onOpenChange={(open) => !open && setActiveTab('none')}
+          direction="bottom"
+        >
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#050508] border-t border-white/10 rounded-t-[3rem] z-[100] outline-none flex flex-col">
+              <div className="mx-auto w-12 h-1 bg-white/10 rounded-full my-4" />
+              <div className="flex-1 overflow-hidden">
+                 {activeTab === 'chat' && (
+                    <ChatPanel 
+                     roomCode={normalizedCode!} 
+                     displayName={displayName} 
+                     onClose={() => setActiveTab('none')} 
+                     messages={messages}
+                     setMessages={setMessages}
                     />
-                  </div>
+                 )}
+                 {activeTab === 'participants' && (
+                    <div className="flex flex-col h-full">
+                       <div className="flex items-center justify-between px-8 py-4">
+                          <h2 className="text-[11px] font-black uppercase tracking-[0.22em] text-white">Participants</h2>
+                          <button onClick={() => setActiveTab('none')} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                             <X className="w-5 h-5 text-slate-500" />
+                          </button>
+                       </div>
+                       <ParticipantsPanel 
+                          isHost={isHost} 
+                          waitingParticipants={waitingParticipants}
+                          onApprove={handleApprove}
+                          onDeny={handleDeny}
+                       />
+                    </div>
+                 )}
               </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
       </main>
 
       <RoomAudioRenderer />
-      <AudioControlBar isHost={isHost} onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)} activeTab={activeTab} />
+      <AudioControlBar 
+        isHost={isHost} 
+        onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)} 
+        activeTab={activeTab}
+        isGridView={isGridView}
+        onToggleView={() => setIsGridView(!isGridView)}
+        isHighContrast={isHighContrast}
+        onToggleContrast={() => setIsHighContrast(!isHighContrast)}
+      />
       <RoomEventListener 
         onNewMessage={handleNewMessage} 
         onReaction={(emoji, sender) => setReactions(prev => [...prev, { id: Math.random().toString(), emoji, sender }])}

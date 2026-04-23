@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
-import { LogIn, Video, Plus, UserCircle2, AlertTriangle } from 'lucide-react';
+import { LogIn, Video, Plus, UserCircle2, AlertTriangle, Mic, Users, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { isConfigured } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -18,70 +18,75 @@ interface HomeProps {
 
 function StaticAppPreview() {
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden opacity-30 grayscale-[0.2] blur-[1px] select-none pointer-events-none hidden lg:block">
+    <div className="absolute inset-0 z-0 overflow-hidden opacity-20 hidden lg:block pointer-events-none select-none">
       <div className="flex h-screen w-screen p-8 gap-6 bg-[#050508]">
-        {/* Main Stage Preview */}
+        {/* Stage Content Mock */}
         <div className="flex-1 flex flex-col gap-6">
-           {/* Participants Grid Mock */}
-           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
-              {[
-                { name: 'PEER_001', color: 'bg-emerald-500/20', init: 'P1' },
-                { name: 'GUEST_NODE', color: 'bg-blue-500/20', init: 'GN' },
-                { name: 'ALPHA_MESH', color: 'bg-purple-500/20', init: 'AM' },
-                { name: 'SECURE_LINK', color: 'bg-amber-500/20', init: 'SL' }
-              ].map((p, i) => (
-                <div key={i} className="bg-white/5 rounded-[2.5rem] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
-                   <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-black text-xl text-white/40", p.color)}>
-                      {p.init}
-                   </div>
-                   <div className="absolute bottom-6 left-6 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-lg">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[8px] font-black uppercase text-white/40 tracking-widest">{p.name}</span>
-                   </div>
-                </div>
-              ))}
+           <div className="flex-1 glass-surface rounded-[4rem] border border-white/5 p-12 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-3xl">
+              <div className="absolute top-8 right-12 flex items-center gap-4">
+                 <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                    <Mic className="w-4 h-4 text-emerald-400" />
+                 </div>
+                 <div className="w-10 h-10 rounded-full bg-white/5 border border-white/5" />
+              </div>
+
+              <div className="relative mb-8">
+                 <div className="absolute -inset-4 bg-emerald-500/20 blur-2xl rounded-full animate-pulse" />
+                 <div className="w-40 h-40 rounded-full bg-gradient-to-br from-blue-600 to-indigo-900 border-2 border-white/20 flex items-center justify-center text-5xl font-black text-white italic shadow-3xl relative z-10">
+                    AX
+                 </div>
+              </div>
+
+              <div className="text-center space-y-4">
+                 <div className="flex items-center justify-center gap-3">
+                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+                    <h3 className="text-2xl font-black text-white tracking-widest uppercase italic">AXEL_NODE</h3>
+                 </div>
+                 <div className="flex items-center gap-3 justify-center">
+                    <span className="text-[10px] font-black uppercase text-blue-400 tracking-[0.2em] border border-blue-500/20 px-4 py-1.5 rounded-full bg-blue-500/5">Transmitting Mesh</span>
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">02:44 LIVE</span>
+                 </div>
+              </div>
            </div>
-           
-           {/* Control Bar Mock */}
+
            <div className="flex justify-center h-20">
-              <div className="flex items-center gap-4 bg-white/5 px-8 rounded-full border border-white/10 shadow-2xl">
-                 {[1, 2, 3, 4, 5].map(i => (
+              <div className="h-full px-12 rounded-full glass-surface-heavy border border-white/10 flex items-center gap-6 shadow-3xl">
+                 {[1, 2, 3, 4].map(i => (
                    <div key={i} className="w-10 h-10 rounded-full bg-white/5 border border-white/10" />
                  ))}
                  <div className="w-px h-6 bg-white/10 mx-2" />
-                 <div className="w-24 h-10 rounded-full bg-red-500/10 border border-red-500/20" />
+                 <div className="w-32 h-10 rounded-full bg-red-500/20 border border-red-500/30" />
               </div>
            </div>
         </div>
 
         {/* Sidebar Mock */}
         <div className="w-80 flex flex-col gap-6">
-           <div className="h-1/2 bg-white/5 rounded-[3rem] border border-white/5 p-8 space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="w-24 h-2 bg-white/10 rounded-full" />
-                <div className="w-4 h-4 bg-blue-500/20 rounded-full" />
+           <div className="h-1/2 glass-surface rounded-[3rem] border border-white/5 p-8 flex flex-col gap-6">
+              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                 <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Active Peers</span>
+                 <Users className="w-4 h-4 text-blue-400" />
               </div>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full bg-white/10" />
-                   <div className="flex flex-col gap-1.5 flex-1">
-                      <div className="w-16 h-2 bg-white/5 rounded-full" />
-                      <div className="w-10 h-1 bg-white/5 rounded-full" />
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-white/10" />
+                   <div className="space-y-1.5 flex-1">
+                      <div className="w-24 h-1.5 bg-white/20 rounded-full" />
+                      <div className="w-16 h-1 bg-white/10 rounded-full" />
                    </div>
-                   <div className="w-2 h-2 rounded-full bg-emerald-500/20" />
+                   <div className="w-2 h-2 rounded-full bg-emerald-500/40" />
                 </div>
               ))}
            </div>
-           <div className="flex-1 bg-white/5 rounded-[3rem] border border-white/5 p-8 flex flex-col gap-4">
-              <div className="mb-auto space-y-4">
-                <div className="w-3/4 h-3 bg-white/10 rounded-full" />
-                <div className="w-1/2 h-2.5 bg-white/5 rounded-full" />
-                <div className="w-2/3 h-2.5 bg-white/10 rounded-full" />
-                <div className="w-full h-12 bg-white/5 rounded-2xl mt-6" />
+           
+           <div className="flex-1 glass-surface rounded-[3rem] border border-white/5 p-8 flex flex-col gap-4">
+              <div className="flex items-center gap-2 mb-auto">
+                 <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                 <div className="w-24 h-2 bg-white/20 rounded-full" />
               </div>
-              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/10" />
-                <div className="flex-1 h-10 bg-white/5 rounded-2xl" />
+              <div className="space-y-4">
+                 <div className="w-full h-10 bg-white/5 rounded-2xl" />
+                 <div className="w-full h-10 bg-white/5 rounded-2xl" />
               </div>
            </div>
         </div>

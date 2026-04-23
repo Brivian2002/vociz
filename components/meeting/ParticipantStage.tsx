@@ -6,7 +6,11 @@ import { useState, useEffect } from 'react';
 import { ConnectionQuality } from 'livekit-client';
 import MetalAvatar from './MetalAvatar';
 
-export default function ParticipantStage() {
+interface ParticipantStageProps {
+  isGridView?: boolean;
+}
+
+export default function ParticipantStage({ isGridView = true }: ParticipantStageProps) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   const [now, setNow] = useState(Date.now());
@@ -30,7 +34,7 @@ export default function ParticipantStage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col scrollbar-hide overflow-y-auto">
       <AnimatePresence mode="popLayout">
         {participants.length <= 1 ? (
           <motion.div 
@@ -58,10 +62,15 @@ export default function ParticipantStage() {
           </motion.div>
         ) : (
           <div className={cn(
-             "grid gap-4 md:gap-6 items-center justify-center p-2 md:p-4",
-             participants.length === 2 ? "grid-cols-1 md:grid-cols-2" : 
-             participants.length <= 4 ? "grid-cols-2" : 
-             "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+             "p-4 md:p-8",
+             isGridView ? (
+               cn(
+                 "grid gap-4 md:gap-6 items-center justify-center",
+                 participants.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-6xl mx-auto" : 
+                 participants.length <= 4 ? "grid-cols-2" : 
+                 "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+               )
+             ) : "flex flex-col gap-3 max-w-4xl mx-auto w-full"
           )}>
             {participants.map((p) => {
               const isLocal = p.sid === localParticipant?.sid;
@@ -72,6 +81,40 @@ export default function ParticipantStage() {
               const displayName = metadata.name || p.identity || 'Anonymous';
               const joinTs = metadata.joinTimestamp || Date.now();
               const durationMins = Math.floor((now - joinTs) / 60000);
+
+              const conn = getConnectionInfo(p.connectionQuality);
+
+              if (!isGridView) {
+                return (
+                  <motion.div
+                    key={p.sid}
+                    layout
+                    className={cn(
+                      "flex items-center gap-4 p-4 md:px-8 rounded-full border border-white/5 backdrop-blur-xl transition-all",
+                      isSpeaking ? "bg-emerald-500/10 border-emerald-500/20" : "bg-white/5 hover:bg-white/[0.08]",
+                      isLocal && "ring-1 ring-blue-500/10"
+                    )}
+                  >
+                    <MetalAvatar name={displayName} size={52} isSpeaking={isSpeaking} isMuted={isMuted} isHost={isLocal} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-black uppercase text-white truncate">{displayName}</h4>
+                      <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500 mt-0.5">
+                         {isLocal ? <span className="text-blue-400">Host Link</span> : <span>Peer Node</span>}
+                         <span className="opacity-30">•</span>
+                         <span>Joined {durationMins}m Ago</span>
+                      </div>
+                    </div>
+                    <div className={cn("px-3 py-1 rounded-lg bg-black/40 border border-white/5 flex items-center gap-2", conn.color)}>
+                      <span className="text-[8px] font-black uppercase">{conn.label}</span>
+                      <div className="flex gap-0.5">
+                        {[...Array(4)].map((_, i) => (
+                           <div key={i} className={cn("w-0.5 h-2 rounded-full", i < conn.bars ? "bg-current" : "bg-white/10")} />
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
 
               return (
                 <motion.div
@@ -102,28 +145,23 @@ export default function ParticipantStage() {
                         <Mic className={cn("w-3.5 h-3.5", isSpeaking && "animate-pulse")} />
                       </div>
                     )}
-            <div className="px-2 py-1 bg-black/40 rounded-lg border border-white/5 backdrop-blur-md">
-               {(() => {
-                 const conn = getConnectionInfo(p.connectionQuality);
-                 return (
-                   <div className={cn("flex flex-col items-center gap-0.5", conn.color)}>
-                     <span className="text-[6px] font-black uppercase tracking-tighter opacity-70">{conn.label}</span>
-                     <div className="flex gap-0.5 mt-0.5">
-                       {[...Array(4)].map((_, i) => (
-                         <div 
-                           key={i} 
-                           className={cn(
-                             "w-0.5 rounded-full",
-                             i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-2.5",
-                             i < conn.bars ? "bg-current" : "bg-white/10"
-                           )} 
-                         />
-                       ))}
-                     </div>
-                   </div>
-                 );
-               })()}
-            </div>
+                    <div className="px-2 py-1 bg-black/40 rounded-lg border border-white/5 backdrop-blur-md">
+                        <div className={cn("flex flex-col items-center gap-0.5", conn.color)}>
+                          <span className="text-[6px] font-black uppercase tracking-tighter opacity-70">{conn.label}</span>
+                          <div className="flex gap-0.5 mt-0.5">
+                            {[...Array(4)].map((_, i) => (
+                              <div 
+                                key={i} 
+                                className={cn(
+                                  "w-0.5 rounded-full",
+                                  i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-2.5",
+                                  i < conn.bars ? "bg-current" : "bg-white/10"
+                                )} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                    </div>
                   </div>
 
                   <div className="relative mb-6">
@@ -131,6 +169,8 @@ export default function ParticipantStage() {
                       name={displayName} 
                       size={110} 
                       isSpeaking={isSpeaking}
+                      isMuted={isMuted}
+                      isHost={isLocal}
                       className="ring-2 ring-white/10 shadow-3xl"
                     />
                   </div>

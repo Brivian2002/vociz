@@ -15,7 +15,16 @@ import {
   MonitorUp,
   MonitorOff,
   Maximize,
-  Minimize
+  Minimize,
+  MoreHorizontal,
+  LayoutGrid,
+  List,
+  Keyboard,
+  ShieldCheck,
+  Timer,
+  QrCode,
+  Contrast,
+  Smile
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,20 +32,49 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import WaveformVisualizer from './WaveformVisualizer';
+import { Drawer } from 'vaul';
+import QRCode from 'react-qr-code';
 
 interface AudioControlBarProps {
   isHost: boolean;
   onToggleTab?: (tab: string) => void;
   activeTab?: string;
+  isGridView?: boolean;
+  onToggleView?: () => void;
+  isHighContrast?: boolean;
+  onToggleContrast?: () => void;
 }
 
-export default function AudioControlBar({ isHost, onToggleTab, activeTab }: AudioControlBarProps) {
+export default function AudioControlBar({ 
+  isHost, 
+  onToggleTab, 
+  activeTab,
+  isGridView,
+  onToggleView,
+  isHighContrast,
+  onToggleContrast
+}: AudioControlBarProps) {
   const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
   const navigate = useNavigate();
   const [isFocusMode, setIsFocusMode] = useState(true);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [showEmojiMenu, setShowEmojiMenu] = useState(false);
+  const [meetingTime, setMeetingTime] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const timer = setInterval(() => {
+      setMeetingTime(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const isMicrophoneEnabled = localParticipant.isMicrophoneEnabled;
   const metadata = JSON.parse(localParticipant.metadata || '{}');
@@ -442,6 +480,110 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
             <Bell className="w-5 h-5 md:w-6 md:h-6 text-blue-400 group-hover:rotate-12 transition-transform" aria-hidden="true" />
           </button>
         )}
+
+        {/* More Options Drawer Trigger */}
+        <Drawer.Root direction="bottom">
+          <Drawer.Trigger asChild>
+            <button 
+              type="button"
+              aria-label="More Meeting Options"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-95 focus:ring-2 focus:ring-blue-500"
+            >
+              <MoreHorizontal className="w-5 h-5 text-slate-300" />
+            </button>
+          </Drawer.Trigger>
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[2.5rem] p-8 flex flex-col gap-8 z-[100] outline-none">
+              <div className="mx-auto w-12 h-1 bg-white/10 rounded-full mb-2" />
+              
+              <div className="space-y-8 overflow-y-auto pb-8">
+                {/* Header with Invite & Stats */}
+                <div className="flex items-center justify-between border-b border-white/5 pb-6">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Mesh Link Status</span>
+                    <span className="text-xl font-black italic uppercase text-white flex items-center gap-2">
+                       <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                       Active {formatTime(meetingTime)}
+                    </span>
+                  </div>
+                  <div className="bg-white p-2 rounded-xl shadow-2xl">
+                    <QRCode value={window.location.href} size={64} />
+                  </div>
+                </div>
+
+                {/* Line 1: Core Meeting Tools */}
+                <div className="space-y-4">
+                   <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-2">Core Meeting Tools</h4>
+                   <div className="grid grid-cols-3 gap-3">
+                      <button onClick={playChime} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                        <Bell className="w-6 h-6 text-blue-400" />
+                        <span className="text-[9px] font-black uppercase text-slate-400">Mesh Chime</span>
+                      </button>
+                      <button onClick={toggleHand} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                        <Hand className="w-6 h-6 text-amber-400" />
+                        <span className="text-[9px] font-black uppercase text-slate-400">Raise Hand</span>
+                      </button>
+                      <button onClick={toggleScreenShare} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                        <MonitorUp className="w-6 h-6 text-indigo-400" />
+                        <span className="text-[9px] font-black uppercase text-slate-400">Share Mesh</span>
+                      </button>
+                   </div>
+                </div>
+
+                {/* Line 2: Productivity & Polish */}
+                <div className="space-y-4">
+                   <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-2">Productivity & Polish</h4>
+                   <div className="grid grid-cols-4 gap-3">
+                      <button 
+                        onClick={onToggleView}
+                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
+                      >
+                        {isGridView ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+                        <span className="text-[8px] font-black uppercase text-slate-500">View</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                          else document.exitFullscreen();
+                        }}
+                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
+                      >
+                        <Maximize className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase text-slate-500">Screen</span>
+                      </button>
+                      <button 
+                        onClick={onToggleContrast}
+                        className={cn("flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10", isHighContrast && "bg-white text-black")}
+                      >
+                        <Contrast className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase">Contrast</span>
+                      </button>
+                      <button 
+                        onClick={() => setShowEmojiMenu(!showEmojiMenu)}
+                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
+                      >
+                        <Smile className="w-5 h-5" />
+                        <span className="text-[8px] font-black uppercase text-slate-500">Reactions</span>
+                      </button>
+                   </div>
+                </div>
+
+                {/* Footer Copy */}
+                <Button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("Mesh Invite Cloned", { description: "Link copied to clipboard." });
+                  }}
+                  className="w-full h-14 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em]"
+                >
+                   <QrCode className="w-4 h-4 mr-2" />
+                   Clone Mesh Invite With Code
+                </Button>
+              </div>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
 
         {/* Leave */}
         <button 
