@@ -385,87 +385,90 @@ export default function AudioControlBar({
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
-            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[3rem] p-8 flex flex-col gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[3rem] p-6 md:p-8 flex flex-col gap-6 md:gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
               <VisuallyHidden>
                 <Drawer.Title>More Meeting Options</Drawer.Title>
                 <Drawer.Description>Advanced controls for microphone, screen sharing, and environment settings.</Drawer.Description>
               </VisuallyHidden>
               <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-2" />
               
-              <div className="space-y-8 overflow-y-auto pb-8">
-                {/* Header with Invite & Stats */}
-                <div className="flex items-center justify-between border-b border-white/5 pb-6">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Mesh Link Status</span>
-                    <span className="text-xl font-black italic uppercase text-white flex items-center gap-2">
-                       <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <div className="space-y-6 overflow-y-auto pb-8">
+                {/* Header with Invite & Stats - Minimized */}
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <div className="flex flex-col gap-0">
+                    <span className="text-[7px] font-black uppercase text-slate-600 tracking-[0.2em]">Mesh Path Status</span>
+                    <span className="text-[10px] font-black italic uppercase text-white/80 flex items-center gap-1">
+                       <ShieldCheck className="w-3 h-3 text-emerald-500/70" />
                        Active {formatTime(meetingTime)}
                     </span>
                   </div>
-                  <div className="bg-white p-2 rounded-xl shadow-2xl">
-                    <QRCode value={window.location.href} size={64} />
+                  <div className="bg-white/90 p-1 rounded-md shadow-2xl">
+                    <QRCode value={window.location.href} size={40} />
                   </div>
                 </div>
 
-                {/* Grid Layout for Tools - 2 Lines */}
-                <div className="space-y-8">
-                   <div className="grid grid-cols-4 gap-4">
-                      {/* Priority Line: Functional Tools */}
-                      <button onClick={toggleHand} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isHandRaised ? "bg-amber-500/20 border-amber-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <Hand className={cn("w-6 h-6", isHandRaised ? "text-amber-400" : "text-slate-400")} />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Hand</span>
+                {/* Grid Layout for Tools - 2 Lines with Larger Targets */}
+                <div className="space-y-6">
+                   {/* Line 1: Core Tools */}
+                   <div className="grid grid-cols-4 gap-3">
+                      <button onClick={toggleHand} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isHandRaised ? "bg-amber-500/20 border-amber-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <Hand className={cn("w-7 h-7", isHandRaised ? "text-amber-400" : "text-slate-400")} />
+                         <span className="text-[8px] font-black uppercase tracking-widest">Hand</span>
                       </button>
-                      <button onClick={toggleScreenShare} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isScreenSharing ? "bg-blue-500/20 border-blue-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <MonitorUp className={cn("w-6 h-6", isScreenSharing ? "text-blue-400" : "text-slate-400")} />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Share</span>
+                      <button onClick={toggleScreenShare} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isScreenSharing ? "bg-blue-500/20 border-blue-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <MonitorUp className={cn("w-7 h-7", isScreenSharing ? "text-blue-400" : "text-slate-400")} />
+                         <span className="text-[8px] font-black uppercase tracking-widest">Share</span>
                       </button>
-                      <button onClick={playChime} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                         <Bell className="w-6 h-6 text-slate-400" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Chime</span>
+                      <button onClick={playChime} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
+                         <Bell className="w-7 h-7 text-slate-400" />
+                         <span className="text-[8px] font-black uppercase tracking-widest">Chime</span>
                       </button>
                       <button 
                          onClick={() => {
                            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
                            else document.exitFullscreen();
                          }}
-                         className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
+                         className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90"
                       >
-                         <Maximize className="w-6 h-6 text-slate-400" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Full</span>
+                         <Maximize className="w-7 h-7 text-slate-400" />
+                         <span className="text-[8px] font-black uppercase tracking-widest">Full</span>
                       </button>
+                   </div>
 
-                      {/* Visibility Line: Environment Config */}
-                      <button onClick={onToggleView} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                         <LayoutGrid className="w-6 h-6 text-slate-400" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">View</span>
+                   {/* Line 2: Environment */}
+                   <div className="grid grid-cols-4 gap-3">
+                      <button onClick={onToggleView} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
+                         <LayoutGrid className="w-7 h-7 text-slate-400" />
+                         <span className="text-[8px] font-black uppercase tracking-widest">View</span>
                       </button>
-                      <button onClick={onToggleContrast} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isHighContrast ? "bg-white text-black" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <Contrast className={cn("w-6 h-6", isHighContrast ? "text-black" : "text-slate-400")} />
-                         <span className="text-[9px] font-black uppercase tracking-widest">Contrast</span>
+                      <button onClick={onToggleContrast} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isHighContrast ? "bg-white text-black" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <Contrast className={cn("w-7 h-7", isHighContrast ? "text-black" : "text-slate-400")} />
+                         <span className="text-[8px] font-black uppercase tracking-widest">Contrast</span>
                       </button>
-                      <button onClick={() => setShowEmojiMenu(!showEmojiMenu)} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                         <Smile className="w-6 h-6 text-slate-400" />
-                         <span className="text-[9px] font-black uppercase tracking-widest">React</span>
+                      <button onClick={() => setShowEmojiMenu(!showEmojiMenu)} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
+                         <Smile className="w-7 h-7 text-slate-400" />
+                         <span className="text-[8px] font-black uppercase tracking-widest">React</span>
                       </button>
                       {isHost && (
-                        <button onClick={handleMuteAll} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all group">
-                           <MicOff className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
-                           <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Silence</span>
+                        <button onClick={handleMuteAll} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all group active:scale-90">
+                           <MicOff className="w-7 h-7 text-red-500 group-hover:scale-110 transition-transform" />
+                           <span className="text-[8px] font-black uppercase tracking-widest text-red-500">Silence</span>
                         </button>
                       )}
                    </div>
                 </div>
 
-                {/* Footer Invite Action */}
+                {/* Footer Invite Action - Minimized */}
                 <Button 
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                     toast.success("Mesh Invite Cloned", { description: "Link copied to clipboard." });
                   }}
-                  className="w-full h-16 bg-white hover:bg-zinc-200 text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-all active:scale-[0.98]"
+                  variant="outline"
+                  className="w-full h-10 bg-white/5 hover:bg-white/10 text-white/50 border-white/5 rounded-xl font-black text-[8px] uppercase tracking-[0.3em] transition-all active:scale-[0.98]"
                 >
-                   <QrCode className="w-5 h-5 mr-3" />
-                   Clone Mesh Node Access Link
+                   <QrCode className="w-3 h-3 mr-2 opacity-50" />
+                   -clone access link
                 </Button>
               </div>
             </Drawer.Content>
@@ -484,32 +487,40 @@ export default function AudioControlBar({
         </button>
       </div>
       
-      {/* Realtime Network Status Indicator */}
-      <div className="hidden md:flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500" aria-live="polite">
+      {/* Ultra Reading Light: Realtime Network Status */}
+      <div className="hidden md:flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-700" aria-live="polite">
          <div className={cn(
-           "flex items-center gap-3 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full border transition-all duration-500",
-           isFocusMode ? "border-white/5" : "border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+           "flex items-center gap-3 px-3 py-1 bg-black/60 backdrop-blur-xl rounded-full border transition-all duration-700",
+           isFocusMode ? "border-white/5" : "border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
          )}>
             <div className="flex flex-col text-right">
-               <span className="text-[7px] uppercase font-black text-slate-500 tracking-tighter leading-none mb-0.5">Link Path: 256-BIT AES</span>
-               <div className="flex items-center gap-2">
-                 <span className={cn("text-[10px] font-black font-mono leading-none", 
-                   localParticipant.connectionQuality === 'excellent' ? "text-emerald-400" :
-                   localParticipant.connectionQuality === 'good' ? "text-blue-400" : "text-amber-500"
+               <span className="text-[6px] uppercase font-black text-slate-600 tracking-tighter leading-none mb-0.5">ULTRA READING LIGHT</span>
+               <div className="flex items-center gap-1.5 leading-none">
+                 <span className={cn("text-[8px] font-black font-mono uppercase", 
+                   localParticipant.connectionQuality === 'excellent' ? "text-emerald-500" :
+                   localParticipant.connectionQuality === 'good' ? "text-amber-400" : "text-red-500"
                  )}>
-                   {isFocusMode ? (localParticipant.connectionQuality?.toUpperCase() || 'CONNECTING') : 'FOCUS LOST'}
+                   {isFocusMode ? (localParticipant.connectionQuality || 'ENGINE') : 'OFFLINE'}
                  </span>
-                 <div className="flex gap-0.5 items-end h-2.5" aria-hidden="true">
-                    {[...Array(4)].map((_, i) => {
+                 
+                 {/* 3-Bar Colored Strength Indicator */}
+                 <div className="flex gap-0.5 items-end h-2" aria-hidden="true">
+                    {[0, 1, 2].map((i) => {
                       const quality = localParticipant.connectionQuality;
-                      const bars = quality === 'excellent' ? 4 : quality === 'good' ? 3 : quality === 'poor' ? 1 : 0;
+                      const strength = quality === 'excellent' ? 3 : quality === 'good' ? 2 : quality === 'poor' ? 1 : 0;
+                      
+                      const color = strength === 3 ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : 
+                                    strength === 2 ? "bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,0.5)]" : 
+                                    strength === 1 ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "bg-white/10";
+
                       return (
                         <div 
                           key={i} 
                           className={cn(
                             "w-0.5 rounded-full transition-all duration-500",
-                            i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-2.5",
-                            i < bars ? (bars > 2 ? "bg-emerald-500" : "bg-amber-500") : "bg-white/10"
+                            i === 0 ? "h-1" : i === 1 ? "h-1.5" : "h-2",
+                            i < strength ? color : "bg-white/5",
+                            i < strength && "animate-pulse" // Reading light effect
                           )} 
                         />
                       );
