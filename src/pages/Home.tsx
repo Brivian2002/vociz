@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { LogIn, Video, Plus, UserCircle2, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { isConfigured } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 
 interface HomeProps {
   session: Session | null;
@@ -23,12 +24,19 @@ function StaticAppPreview() {
         <div className="flex-1 flex flex-col gap-6">
            {/* Participants Grid Mock */}
            <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="bg-white/5 rounded-[2rem] border border-white/5 flex items-center justify-center relative overflow-hidden">
-                   <div className="w-20 h-20 rounded-full bg-slate-800" />
-                   <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-lg">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-[8px] font-black uppercase text-white/40 tracking-widest">PEER_NODE_00{i}</span>
+              {[
+                { name: 'PEER_001', color: 'bg-emerald-500/20', init: 'P1' },
+                { name: 'GUEST_NODE', color: 'bg-blue-500/20', init: 'GN' },
+                { name: 'ALPHA_MESH', color: 'bg-purple-500/20', init: 'AM' },
+                { name: 'SECURE_LINK', color: 'bg-amber-500/20', init: 'SL' }
+              ].map((p, i) => (
+                <div key={i} className="bg-white/5 rounded-[2.5rem] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden">
+                   <div className={cn("w-20 h-20 rounded-full flex items-center justify-center font-black text-xl text-white/40", p.color)}>
+                      {p.init}
+                   </div>
+                   <div className="absolute bottom-6 left-6 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-lg">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[8px] font-black uppercase text-white/40 tracking-widest">{p.name}</span>
                    </div>
                 </div>
               ))}
@@ -36,10 +44,11 @@ function StaticAppPreview() {
            
            {/* Control Bar Mock */}
            <div className="flex justify-center h-20">
-              <div className="flex items-center gap-4 bg-white/5 px-8 rounded-full border border-white/10">
+              <div className="flex items-center gap-4 bg-white/5 px-8 rounded-full border border-white/10 shadow-2xl">
                  {[1, 2, 3, 4, 5].map(i => (
-                   <div key={i} className="w-10 h-10 rounded-full bg-white/5 border border-white/5" />
+                   <div key={i} className="w-10 h-10 rounded-full bg-white/5 border border-white/10" />
                  ))}
+                 <div className="w-px h-6 bg-white/10 mx-2" />
                  <div className="w-24 h-10 rounded-full bg-red-500/10 border border-red-500/20" />
               </div>
            </div>
@@ -47,18 +56,33 @@ function StaticAppPreview() {
 
         {/* Sidebar Mock */}
         <div className="w-80 flex flex-col gap-6">
-           <div className="h-1/2 bg-white/5 rounded-[2.5rem] border border-white/5 p-6 space-y-4">
-              <div className="w-24 h-2 bg-white/10 rounded-full" />
+           <div className="h-1/2 bg-white/5 rounded-[3rem] border border-white/5 p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="w-24 h-2 bg-white/10 rounded-full" />
+                <div className="w-4 h-4 bg-blue-500/20 rounded-full" />
+              </div>
               {[1, 2, 3, 4].map(i => (
                 <div key={i} className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-full bg-white/5" />
-                   <div className="w-20 h-2 bg-white/5 rounded-full" />
+                   <div className="w-10 h-10 rounded-full bg-white/10" />
+                   <div className="flex flex-col gap-1.5 flex-1">
+                      <div className="w-16 h-2 bg-white/5 rounded-full" />
+                      <div className="w-10 h-1 bg-white/5 rounded-full" />
+                   </div>
+                   <div className="w-2 h-2 rounded-full bg-emerald-500/20" />
                 </div>
               ))}
            </div>
-           <div className="flex-1 bg-white/5 rounded-[2.5rem] border border-white/5 p-6 flex flex-col justify-end gap-3">
-              <div className="w-full h-8 bg-white/5 rounded-xl" />
-              <div className="w-full h-10 bg-white/5 rounded-full" />
+           <div className="flex-1 bg-white/5 rounded-[3rem] border border-white/5 p-8 flex flex-col gap-4">
+              <div className="mb-auto space-y-4">
+                <div className="w-3/4 h-3 bg-white/10 rounded-full" />
+                <div className="w-1/2 h-2.5 bg-white/5 rounded-full" />
+                <div className="w-2/3 h-2.5 bg-white/10 rounded-full" />
+                <div className="w-full h-12 bg-white/5 rounded-2xl mt-6" />
+              </div>
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10" />
+                <div className="flex-1 h-10 bg-white/5 rounded-2xl" />
+              </div>
            </div>
         </div>
       </div>
@@ -69,8 +93,16 @@ function StaticAppPreview() {
 export default function Home({ session }: HomeProps) {
   const navigate = useNavigate();
   const [meetingCode, setMeetingCode] = useState('');
-  const [displayName, setDisplayName] = useState(session?.user?.user_metadata?.full_name || '');
+  const [displayName, setDisplayName] = useState(() => {
+    return session?.user?.user_metadata?.full_name || localStorage.getItem('voicemeet_identity') || '';
+  });
   const [isCreating, setIsCreating] = useState(false);
+
+  React.useEffect(() => {
+    if (displayName) {
+      localStorage.setItem('voicemeet_identity', displayName);
+    }
+  }, [displayName]);
 
   if (!isConfigured) {
     return (

@@ -13,7 +13,9 @@ import {
   Target,
   AlertCircle,
   MonitorUp,
-  MonitorOff
+  MonitorOff,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -30,9 +32,11 @@ interface AudioControlBarProps {
 
 export default function AudioControlBar({ isHost, onToggleTab, activeTab }: AudioControlBarProps) {
   const { localParticipant } = useLocalParticipant();
+  const participants = useParticipants();
   const navigate = useNavigate();
   const [isFocusMode, setIsFocusMode] = useState(true);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showEmojiMenu, setShowEmojiMenu] = useState(false);
 
   const isMicrophoneEnabled = localParticipant.isMicrophoneEnabled;
   const metadata = JSON.parse(localParticipant.metadata || '{}');
@@ -48,6 +52,37 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+
+      if (e.key.toLowerCase() === 'm') {
+        toggleMic();
+      }
+      if (e.key === 'Escape') {
+        setShowExitConfirm(prev => !prev);
+      }
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault();
+        localParticipant.setMicrophoneEnabled(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        localParticipant.setMicrophoneEnabled(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [localParticipant, isMicrophoneEnabled]);
 
   // Expert: Visibility API for "Social Media Restriction" deterrent
   useEffect(() => {
@@ -90,6 +125,36 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
     } catch (error: any) {
       console.error('Failed to toggle microphone:', error);
     }
+  };
+
+  const sendReaction = async (emoji: string) => {
+    triggerHaptic(15);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify({ 
+      type: 'reaction', 
+      emoji, 
+      sender: localParticipant.name || localParticipant.identity 
+    }));
+    try {
+      await localParticipant.publishData(data, { reliable: false });
+      setShowEmojiMenu(false);
+    } catch (e) {}
+  };
+
+  const handleMuteAll = async () => {
+    if (!isHost) return;
+    triggerHaptic(50);
+    const encoder = new TextEncoder();
+    // Signal all but self
+    const otherParticipants = participants.filter(p => p.sid !== localParticipant.sid);
+    for (const p of otherParticipants) {
+      const payload = JSON.stringify({ type: 'signal', action: 'mute', targetSid: p.sid });
+      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
+    }
+    toast.error('REMOTE MUTE ALL: Broadcasted', {
+      description: 'Silencing all peer nodes across the mesh.',
+      icon: <MicOff className="w-4 h-4" />
+    });
   };
 
   const toggleHand = async () => {
@@ -223,6 +288,72 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
         >
           {activeTab === 'participants' ? <X className="w-5 h-5" aria-hidden="true" /> : <Users className="w-5 h-5" aria-hidden="true" />}
         </button>
+
+        {/* Fullscreen */}
+        <button 
+          type="button"
+          onClick={() => {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen();
+            } else if (document.exitFullscreen) {
+              document.exitFullscreen();
+            }
+          }}
+          aria-label="Toggle Fullscreen"
+          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 text-slate-400 hover:bg-white/10 flex items-center justify-center transition-all"
+        >
+          {document.fullscreenElement ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+        </button>
+
+        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
+        
+        {/* Emoji Reactions */}
+        <div className="relative">
+          <button 
+            type="button"
+            onClick={() => setShowEmojiMenu(!showEmojiMenu)}
+            aria-label="Send Reaction"
+            className={cn(
+              "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all bg-white/5 text-white hover:bg-white/10 focus:ring-2 focus:ring-blue-500",
+              showEmojiMenu && "bg-blue-600/20 text-blue-400"
+            )}
+          >
+            <span className="text-xl">✨</span>
+          </button>
+          
+          <AnimatePresence>
+            {showEmojiMenu && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                className="absolute bottom-16 left-1/2 -translate-x-1/2 p-3 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex gap-2 z-50"
+              >
+                {['🔥', '👏', '😂', '💯', '❤️', '🙌'].map(emoji => (
+                  <button 
+                    key={emoji}
+                    onClick={() => sendReaction(emoji)}
+                    className="text-2xl hover:scale-125 transition-transform p-2 grayscale hover:grayscale-0"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Mute All (Host Only) */}
+        {isHost && (
+          <button 
+            type="button"
+            onClick={handleMuteAll}
+            aria-label="Remote suppress all: Mute All Participants"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-600/10 border border-orange-500/30 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-orange-500/10 focus:ring-2 focus:ring-orange-500"
+          >
+            <MicOff className="w-5 h-5" />
+          </button>
+        )}
 
         <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
 

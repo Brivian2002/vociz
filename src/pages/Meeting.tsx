@@ -42,11 +42,13 @@ import 'jspdf-autotable';
 // Global Room Event Listener for Expert Signaling
 function RoomEventListener({ 
   onNewMessage, 
+  onReaction,
   onChatMessage,
   roomCode,
   displayName
 }: { 
   onNewMessage: () => void,
+  onReaction: (emoji: string, sender: string) => void,
   onChatMessage: (msg: Message) => void,
   roomCode: string,
   displayName: string
@@ -61,6 +63,11 @@ function RoomEventListener({
       const str = decoder.decode(payload);
       try {
         const data = JSON.parse(str);
+
+        // Emoji Burst logic
+        if (data.type === 'reaction') {
+          onReaction(data.emoji, data.sender);
+        }
         
         // Universal Signaling (Everyone hears this)
         if (data.type === 'signal') {
@@ -198,7 +205,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const navigate = useNavigate();
   
   const normalizedCode = code?.trim().toLowerCase();
-  const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
+  const [displayName, setDisplayName] = useState(() => {
+    return searchParams.get('name') || localStorage.getItem('voicemeet_identity') || '';
+  });
   const isCreator = searchParams.get('host') === 'true';
 
   const [token, setToken] = useState<string | null>(null);
@@ -216,7 +225,25 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [attendance, setAttendance] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [reactions, setReactions] = useState<{id: string, emoji: string, sender: string}[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // Persistent Registry
+  useEffect(() => {
+    if (displayName) {
+      localStorage.setItem('voicemeet_identity', displayName);
+    }
+  }, [displayName]);
+
+  // Reactions Cleanup
+  useEffect(() => {
+    if (reactions.length > 0) {
+      const timer = setTimeout(() => {
+        setReactions(prev => prev.slice(1));
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [reactions]);
 
   // Intent & Waiting Room Logic
   useEffect(() => {
@@ -576,6 +603,27 @@ export default function Meeting({ session: _session }: MeetingProps) {
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[150px] pointer-events-none z-0"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[150px] pointer-events-none z-0"></div>
 
+      {/* Floating Emoji Layer */}
+      <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+        <AnimatePresence>
+          {reactions.map((r) => (
+            <motion.div
+              key={r.id}
+              initial={{ y: '110vh', x: `${Math.random() * 80 + 10}vw`, opacity: 0, scale: 0.5 }}
+              animate={{ y: '-10vh', opacity: [0, 1, 1, 0], scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 3, ease: 'easeOut' }}
+              className="absolute text-4xl flex flex-col items-center gap-1"
+            >
+              <div className="px-2 py-1 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-[8px] font-black uppercase tracking-tighter text-white mb-2">
+                {r.sender}
+              </div>
+              {r.emoji}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
       <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
       <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative" role="main">
@@ -692,10 +740,16 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <RoomAudioRenderer />
       <AudioControlBar isHost={isHost} onToggleTab={(tab) => setActiveTab(prev => prev === tab ? 'none' : tab as any)} activeTab={activeTab} />
-      <RoomEventListener onNewMessage={handleNewMessage} onChatMessage={(msg) => setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      })} roomCode={normalizedCode!} displayName={displayName} />
+      <RoomEventListener 
+        onNewMessage={handleNewMessage} 
+        onReaction={(emoji, sender) => setReactions(prev => [...prev, { id: Math.random().toString(), emoji, sender }])}
+        onChatMessage={(msg) => setMessages(prev => {
+          if (prev.some(m => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        })} 
+        roomCode={normalizedCode!} 
+        displayName={displayName} 
+      />
     </LiveKitRoom>
   );
 }
