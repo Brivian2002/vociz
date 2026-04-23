@@ -327,74 +327,6 @@ export default function AudioControlBar({
           {activeTab === 'participants' ? <X className="w-5 h-5" aria-hidden="true" /> : <Users className="w-5 h-5" aria-hidden="true" />}
         </button>
 
-        {/* Fullscreen */}
-        <button 
-          type="button"
-          onClick={() => {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen();
-            } else if (document.exitFullscreen) {
-              document.exitFullscreen();
-            }
-          }}
-          aria-label="Toggle Fullscreen"
-          className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 text-slate-400 hover:bg-white/10 flex items-center justify-center transition-all"
-        >
-          {document.fullscreenElement ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-        </button>
-
-        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
-        
-        {/* Emoji Reactions */}
-        <div className="relative">
-          <button 
-            type="button"
-            onClick={() => setShowEmojiMenu(!showEmojiMenu)}
-            aria-label="Send Reaction"
-            className={cn(
-              "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all bg-white/5 text-white hover:bg-white/10 focus:ring-2 focus:ring-blue-500",
-              showEmojiMenu && "bg-blue-600/20 text-blue-400"
-            )}
-          >
-            <span className="text-xl">✨</span>
-          </button>
-          
-          <AnimatePresence>
-            {showEmojiMenu && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                className="absolute bottom-16 left-1/2 -translate-x-1/2 p-3 bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex gap-2 z-50"
-              >
-                {['🔥', '👏', '😂', '💯', '❤️', '🙌'].map(emoji => (
-                  <button 
-                    key={emoji}
-                    onClick={() => sendReaction(emoji)}
-                    className="text-2xl hover:scale-125 transition-transform p-2 grayscale hover:grayscale-0"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Mute All (Host Only) */}
-        {isHost && (
-          <button 
-            type="button"
-            onClick={handleMuteAll}
-            aria-label="Remote suppress all: Mute All Participants"
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-600/10 border border-orange-500/30 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-orange-500/10 focus:ring-2 focus:ring-orange-500"
-          >
-            <MicOff className="w-5 h-5" />
-          </button>
-        )}
-
-        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
-
         {/* Mute */}
         <div className="relative group">
           <button 
@@ -424,78 +356,24 @@ export default function AudioControlBar({
              <WaveformVisualizer className="scale-75" />
           </div>
         </div>
-        
-        {/* Hand */}
-        <button 
-          type="button"
-          onClick={toggleHand}
-          aria-label={isHandRaised ? "Lower Hand" : "Raise Hand"}
-          aria-pressed={isHandRaised}
-          className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all relative overflow-hidden focus:ring-2 focus:ring-amber-500 focus:outline-none",
-            isHandRaised ? "bg-amber-600/20 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-          )}
-        >
-          <span className={cn("text-xl transition-transform", isHandRaised && "scale-125")} aria-hidden="true">✋</span>
-          {isHandRaised && !prefersReducedMotion && (
-             <motion.div 
-               animate={{ y: [0, -10, 0] }}
-               transition={{ duration: 1.5, repeat: Infinity }}
-               className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full"
-               aria-hidden="true"
-             />
-          )}
-        </button>
-        
-        {/* Screen Share */}
-        <button 
-          type="button"
-          onClick={toggleScreenShare}
-          aria-label={isScreenSharing ? "Stop Screen Sharing" : "Start Screen Sharing"}
-          aria-pressed={isScreenSharing}
-          className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all relative overflow-hidden focus:ring-2 focus:ring-blue-500 focus:outline-none",
-            isScreenSharing ? "bg-blue-600/20 border-blue-500/50 shadow-[0_0_20px_rgba(37,99,235,0.2)] text-blue-400" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
-          )}
-        >
-          {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <MonitorUp className="w-5 h-5" />}
-          {isScreenSharing && !prefersReducedMotion && (
-             <motion.div 
-               animate={{ opacity: [0, 1, 0] }}
-               transition={{ duration: 2, repeat: Infinity }}
-               className="absolute inset-0 bg-blue-500/10"
-               aria-hidden="true"
-             />
-          )}
-        </button>
 
-        {/* Chime Bell (Host Only) */}
-        {isHost && (
-          <button 
-            type="button"
-            onClick={playChime}
-            aria-label="Broadcast Room Chime"
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center group transition-colors hover:bg-blue-600/30 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          >
-            <Bell className="w-5 h-5 md:w-6 md:h-6 text-blue-400 group-hover:rotate-12 transition-transform" aria-hidden="true" />
-          </button>
-        )}
-
+        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
+        
         {/* More Options Drawer Trigger */}
         <Drawer.Root direction="bottom">
           <Drawer.Trigger asChild>
             <button 
               type="button"
               aria-label="More Meeting Options"
-              className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-95 focus:ring-2 focus:ring-blue-500"
+              className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 focus:ring-2 focus:ring-blue-500 shadow-xl"
             >
-              <MoreHorizontal className="w-5 h-5 text-slate-300" />
+              <MoreHorizontal className="w-6 h-6 text-white" />
             </button>
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
-            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[2.5rem] p-8 flex flex-col gap-8 z-[100] outline-none">
-              <div className="mx-auto w-12 h-1 bg-white/10 rounded-full mb-2" />
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[3rem] p-8 flex flex-col gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
+              <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-2" />
               
               <div className="space-y-8 overflow-y-auto pb-8">
                 {/* Header with Invite & Stats */}
@@ -512,73 +390,65 @@ export default function AudioControlBar({
                   </div>
                 </div>
 
-                {/* Line 1: Core Meeting Tools */}
-                <div className="space-y-4">
-                   <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-2">Core Meeting Tools</h4>
-                   <div className="grid grid-cols-3 gap-3">
+                {/* Grid Layout for Tools - 2 Lines */}
+                <div className="space-y-8">
+                   <div className="grid grid-cols-4 gap-4">
+                      {/* Priority Line: Functional Tools */}
+                      <button onClick={toggleHand} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isHandRaised ? "bg-amber-500/20 border-amber-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <Hand className={cn("w-6 h-6", isHandRaised ? "text-amber-400" : "text-slate-400")} />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Hand</span>
+                      </button>
+                      <button onClick={toggleScreenShare} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isScreenSharing ? "bg-blue-500/20 border-blue-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <MonitorUp className={cn("w-6 h-6", isScreenSharing ? "text-blue-400" : "text-slate-400")} />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Share</span>
+                      </button>
                       <button onClick={playChime} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                        <Bell className="w-6 h-6 text-blue-400" />
-                        <span className="text-[9px] font-black uppercase text-slate-400">Mesh Chime</span>
+                         <Bell className="w-6 h-6 text-slate-400" />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Chime</span>
                       </button>
-                      <button onClick={toggleHand} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                        <Hand className="w-6 h-6 text-amber-400" />
-                        <span className="text-[9px] font-black uppercase text-slate-400">Raise Hand</span>
+                      <button 
+                         onClick={() => {
+                           if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                           else document.exitFullscreen();
+                         }}
+                         className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
+                      >
+                         <Maximize className="w-6 h-6 text-slate-400" />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Full</span>
                       </button>
-                      <button onClick={toggleScreenShare} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                        <MonitorUp className="w-6 h-6 text-indigo-400" />
-                        <span className="text-[9px] font-black uppercase text-slate-400">Share Mesh</span>
+
+                      {/* Visibility Line: Environment Config */}
+                      <button onClick={onToggleView} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                         <LayoutGrid className="w-6 h-6 text-slate-400" />
+                         <span className="text-[9px] font-black uppercase tracking-widest">View</span>
                       </button>
+                      <button onClick={onToggleContrast} className={cn("flex flex-col items-center gap-3 p-4 rounded-3xl transition-all border", isHighContrast ? "bg-white text-black" : "bg-white/5 border-white/5 hover:bg-white/10")}>
+                         <Contrast className={cn("w-6 h-6", isHighContrast ? "text-black" : "text-slate-400")} />
+                         <span className="text-[9px] font-black uppercase tracking-widest">Contrast</span>
+                      </button>
+                      <button onClick={() => setShowEmojiMenu(!showEmojiMenu)} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                         <Smile className="w-6 h-6 text-slate-400" />
+                         <span className="text-[9px] font-black uppercase tracking-widest">React</span>
+                      </button>
+                      {isHost && (
+                        <button onClick={handleMuteAll} className="flex flex-col items-center gap-3 p-4 rounded-3xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all group">
+                           <MicOff className="w-6 h-6 text-red-500 group-hover:scale-110 transition-transform" />
+                           <span className="text-[9px] font-black uppercase tracking-widest text-red-500">Silence</span>
+                        </button>
+                      )}
                    </div>
                 </div>
 
-                {/* Line 2: Productivity & Polish */}
-                <div className="space-y-4">
-                   <h4 className="text-[9px] font-black uppercase text-slate-600 tracking-widest px-2">Productivity & Polish</h4>
-                   <div className="grid grid-cols-4 gap-3">
-                      <button 
-                        onClick={onToggleView}
-                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
-                      >
-                        {isGridView ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
-                        <span className="text-[8px] font-black uppercase text-slate-500">View</span>
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-                          else document.exitFullscreen();
-                        }}
-                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
-                      >
-                        <Maximize className="w-5 h-5" />
-                        <span className="text-[8px] font-black uppercase text-slate-500">Screen</span>
-                      </button>
-                      <button 
-                        onClick={onToggleContrast}
-                        className={cn("flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10", isHighContrast && "bg-white text-black")}
-                      >
-                        <Contrast className="w-5 h-5" />
-                        <span className="text-[8px] font-black uppercase">Contrast</span>
-                      </button>
-                      <button 
-                        onClick={() => setShowEmojiMenu(!showEmojiMenu)}
-                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/5 border border-white/10"
-                      >
-                        <Smile className="w-5 h-5" />
-                        <span className="text-[8px] font-black uppercase text-slate-500">Reactions</span>
-                      </button>
-                   </div>
-                </div>
-
-                {/* Footer Copy */}
+                {/* Footer Invite Action */}
                 <Button 
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href);
                     toast.success("Mesh Invite Cloned", { description: "Link copied to clipboard." });
                   }}
-                  className="w-full h-14 bg-white text-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em]"
+                  className="w-full h-16 bg-white hover:bg-zinc-200 text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-[0_20px_40px_rgba(255,255,255,0.1)] transition-all active:scale-[0.98]"
                 >
-                   <QrCode className="w-4 h-4 mr-2" />
-                   Clone Mesh Invite With Code
+                   <QrCode className="w-5 h-5 mr-3" />
+                   Clone Mesh Node Access Link
                 </Button>
               </div>
             </Drawer.Content>
