@@ -205,9 +205,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [liveKitUrl, setLiveKitUrl] = useState<string>(import.meta.env.VITE_LIVEKIT_URL || import.meta.env.NEXT_PUBLIC_LIVEKIT_URL || '');
   const [isHost, setIsHost] = useState(isCreator);
   const [isLoading, setIsLoading] = useState(true);
-  const [waitingParticipants, setWaitingParticipants] = useState<any[]>([]);
-  const [isWaiting, setIsWaiting] = useState(false);
-  const [myRequestId, setMyRequestId] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [joinTime, setJoinTime] = useState<Date | null>(null);
@@ -218,82 +215,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Intent & Waiting Room Logic
-  useEffect(() => {
-    if (!normalizedCode) return;
-
-    const channel = supabase.channel(`waiting:${normalizedCode}`)
-      .on('broadcast', { event: 'join-request' }, (payload) => {
-        if (isHost && hasJoined) {
-          setWaitingParticipants(prev => {
-            if (prev.some(p => p.id === payload.payload.id)) return prev;
-            return [...prev, payload.payload];
-          });
-          toast(`LINK REQUEST: ${payload.payload.name}`, {
-            description: 'New node requesting admission to the mesh.',
-            icon: <UserPlus className="w-4 h-4 text-amber-500" />
-          });
-        }
-      })
-      .on('broadcast', { event: 'join-response' }, (payload) => {
-        const { targetId, status } = payload.payload;
-        if (targetId === myRequestId) {
-          if (status === 'approved') {
-            setIsWaiting(false);
-            handleJoin();
-            toast.success('ADMISSION GRANTED', { icon: <ShieldCheck className="w-4 h-4" /> });
-          } else if (status === 'denied') {
-            setIsWaiting(false);
-            setMyRequestId(null);
-            toast.error('ADMISSION DENIED', { description: 'The host has rejected your link request.', icon: <ShieldAlert className="w-4 h-4" /> });
-          }
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [normalizedCode, isHost, hasJoined, myRequestId]);
-
   const requestAdmission = async () => {
     if (!displayName.trim()) return;
-    
-    if (isHost) {
-      handleJoin();
-      return;
-    }
-
-    const requestId = crypto.randomUUID();
-    setMyRequestId(requestId);
-    setIsWaiting(true);
-    
-    const channel = supabase.channel(`waiting:${normalizedCode}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'join-request',
-      payload: { id: requestId, name: displayName }
-    });
-    
-    toast.info('REQUEST BROADCAST', { description: 'Admission request sent to the mesh host.' });
-  };
-
-  const handleApprove = async (id: string) => {
-    const channel = supabase.channel(`waiting:${normalizedCode}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'join-response',
-      payload: { targetId: id, status: 'approved' }
-    });
-    setWaitingParticipants(prev => prev.filter(p => p.id !== id));
-  };
-
-  const handleDeny = async (id: string) => {
-    const channel = supabase.channel(`waiting:${normalizedCode}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'join-response',
-      payload: { targetId: id, status: 'denied' }
-    });
-    setWaitingParticipants(prev => prev.filter(p => p.id !== id));
+    handleJoin();
   };
 
   useEffect(() => {
@@ -469,52 +393,54 @@ export default function Meeting({ session: _session }: MeetingProps) {
         <div className="absolute top-[0%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
         
-        <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-10">
+        <div className="z-10 w-full max-w-sm flex flex-col items-center space-y-6">
           {/* Brand */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)]">
-              <Video className="w-5 h-5 text-black" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <Video className="w-4 h-4 text-black" aria-hidden="true" />
             </div>
-            <h1 className="text-xl font-black uppercase tracking-tighter text-white/90 italic">VoiceMeet</h1>
+            <h1 className="text-lg font-black uppercase tracking-tighter text-white/90 italic">VoiceMeet</h1>
           </div>
           
           {/* Join Dashboard */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-[#0c0d12] border border-white/10 rounded-[2rem] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] space-y-10 relative overflow-hidden"
+            className="w-full bg-[#0c0d12] border border-white/10 rounded-[1.5rem] p-6 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] space-y-6 relative overflow-hidden"
           >
-            <div className="text-center space-y-2">
-              <h2 className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">PRE-FLIGHT DASHBOARD</h2>
-              <div className="h-[2px] w-8 bg-white mx-auto opacity-20" />
+            <div className="text-center space-y-1">
+              <h2 className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Mesh Authorization</h2>
             </div>
 
-            <div className="space-y-10">
-              <div className="flex flex-col items-center gap-6">
-                <div className="text-center space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 border-dashed">
-                   <MicOff className="w-5 h-5 text-amber-500 mx-auto" />
-                   <p className="text-[9px] font-black uppercase text-slate-400 leading-tight">
-                     Hardware mesh requires microphone permission. <br/>
-                     <span className="text-white/60">VoiceMeet will sync with your standard audio input.</span>
-                   </p>
-                </div>
+            <div className="space-y-6">
+              {/* Permission Guard */}
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 border-dashed text-center space-y-2">
+                 <MicOff className="w-5 h-5 text-amber-500 mx-auto" aria-hidden="true" />
+                 <h3 className="text-[10px] font-black text-white uppercase tracking-tight">Audio Node Sync Required</h3>
+                 <p className="text-[8px] text-slate-500 uppercase font-bold leading-relaxed px-4">
+                    Please grant microphone access to engage the communication mesh. 
+                    Your audio remains encrypted on-device.
+                 </p>
+              </div>
 
+              <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                   <div className="w-20 h-20 rounded-full border border-white/5 flex items-center justify-center p-1 bg-white/[0.01] relative z-10">
+                   <div className="w-16 h-16 rounded-full border border-white/5 flex items-center justify-center p-1 bg-white/[0.01] relative z-10 transition-transform hover:scale-105 active:scale-95 cursor-default">
                       <div className="w-full h-full rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-inner relative overflow-hidden">
-                         <span className="text-3xl font-black text-white italic uppercase">{displayName ? displayName.slice(0, 1) : '?'}</span>
+                         <span className="text-2xl font-black text-white italic uppercase" aria-hidden="true">{displayName ? displayName.slice(0, 1) : '?'}</span>
                       </div>
                    </div>
-                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-[#0c0d12] shadow-lg" />
+                   <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#0c0d12] shadow-lg" aria-label="Audio Signal Available" />
                 </div>
                 
-                <div className="space-y-3 w-full">
-                  <label className="text-[9px] uppercase tracking-[0.2em] font-black text-white/30 text-center block">Access Identity</label>
+                <div className="space-y-2 w-full">
+                  <label htmlFor="identity-node" className="text-[8px] uppercase tracking-[0.2em] font-black text-white/20 text-center block">Access Identity</label>
                   <Input 
+                    id="identity-node"
                     placeholder="IDENTIFY NODE" 
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-12 bg-black/40 border-white/5 rounded-lg text-white placeholder:text-zinc-800 text-center font-black tracking-widest focus-visible:ring-1 focus-visible:ring-white/20 text-md transition-all uppercase border-2"
+                    className="h-10 bg-black/40 border-white/5 rounded-lg text-white placeholder:text-zinc-800 text-center font-black tracking-widest focus-visible:ring-1 focus-visible:ring-white/20 text-sm transition-all uppercase border-2"
                   />
                 </div>
               </div>
@@ -522,23 +448,19 @@ export default function Meeting({ session: _session }: MeetingProps) {
                 <div className="flex flex-col gap-3">
                   <Button 
                     onClick={requestAdmission}
-                    disabled={isJoining || isWaiting || !displayName.trim()}
-                    className="w-full h-12 bg-white hover:bg-zinc-200 text-black rounded-lg font-black text-xs uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_10px_20px_rgba(255,255,255,0.05)]"
+                    disabled={isJoining || !displayName.trim()}
+                    aria-label="Secure join to meeting room"
+                    className="w-full h-10 bg-white hover:bg-zinc-200 text-black rounded-lg font-black text-[10px] uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_10px_20px_rgba(255,255,255,0.05)]"
                   >
                     {isJoining ? (
-                      <div className="flex items-center gap-3">
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                         SYNCING
                       </div>
-                    ) : isWaiting ? (
-                      <div className="flex items-center gap-3">
-                        <Zap className="w-4 h-4 animate-pulse text-blue-600" />
-                        WAITING FOR HOST...
-                      </div>
                     ) : (
-                      <div className="flex items-center gap-3">
-                        <UserPlus className="w-4 h-4" />
-                        REQUEST ADMISSION
+                      <div className="flex items-center gap-2">
+                        <UserPlus className="w-3 h-3" aria-hidden="true" />
+                        JOIN MESH
                       </div>
                     )}
                   </Button>
@@ -681,9 +603,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   <div className="flex-1 overflow-hidden">
                     <ParticipantsPanel 
                       isHost={isHost} 
-                      waitingParticipants={waitingParticipants}
-                      onApprove={handleApprove}
-                      onDeny={handleDeny}
                     />
                   </div>
               </div>

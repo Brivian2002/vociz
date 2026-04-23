@@ -25,15 +25,9 @@ import { toast } from 'sonner';
 import MetalAvatar from './MetalAvatar';
 
 export default function ParticipantsPanel({ 
-  isHost, 
-  waitingParticipants = [],
-  onApprove,
-  onDeny
+  isHost
 }: { 
-  isHost: boolean,
-  waitingParticipants?: any[],
-  onApprove?: (id: string) => void,
-  onDeny?: (id: string) => void
+  isHost: boolean
 }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -130,54 +124,8 @@ export default function ParticipantsPanel({
         <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Encrypted Peer Mesh</p>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" role="region" aria-label="Participant List">
         <div className="p-4 space-y-4">
-          {/* Waiting Room Section (Host Only) */}
-          {isHost && waitingParticipants.length > 0 && (
-            <div className="space-y-2 mb-6">
-              <h3 className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-3">
-                <Activity className="w-3 h-3 animate-pulse" />
-                Inbound Link Requests ({waitingParticipants.length})
-              </h3>
-              <AnimatePresence>
-                {waitingParticipants.map((p) => (
-                  <motion.div
-                    key={p.id}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-lg shadow-amber-500/5"
-                  >
-                    <div className="shrink-0">
-                      <MetalAvatar name={p.name} size={32} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-black text-white uppercase truncate">{p.name}</p>
-                      <p className="text-[7px] text-amber-500/60 font-black uppercase tracking-tighter">Awaiting Authorization</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => onApprove?.(p.id)}
-                        className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-black transition-all shadow-lg shadow-emerald-500/10"
-                        title="Authorize Node"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onDeny?.(p.id)}
-                        className="w-7 h-7 rounded-lg bg-red-500/20 border border-red-500/30 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-black transition-all shadow-lg shadow-red-500/10"
-                        title="Deny Node"
-                      >
-                        <UserX className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              <div className="w-full h-px bg-white/5 my-4" />
-            </div>
-          )}
-
           <div className="space-y-2">
             <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Active Peers</h3>
             <AnimatePresence mode="popLayout">
@@ -210,12 +158,12 @@ export default function ParticipantsPanel({
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                         <span className={cn(
+                         <h3 className={cn(
                            "text-xs font-black uppercase tracking-tight truncate",
                            isActiveSpeaker ? "text-emerald-400" : "text-white"
                          )}>
                            {displayName}
-                         </span>
+                         </h3>
                          {isLocal && <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">You</span>}
                       </div>
                       

@@ -15,6 +15,57 @@ interface HomeProps {
   session: Session | null;
 }
 
+function StaticAppPreview() {
+  return (
+    <div className="absolute inset-0 z-0 overflow-hidden opacity-30 grayscale-[0.2] blur-[1px] select-none pointer-events-none hidden lg:block">
+      <div className="flex h-screen w-screen p-8 gap-6 bg-[#050508]">
+        {/* Main Stage Preview */}
+        <div className="flex-1 flex flex-col gap-6">
+           {/* Participants Grid Mock */}
+           <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white/5 rounded-[2rem] border border-white/5 flex items-center justify-center relative overflow-hidden">
+                   <div className="w-20 h-20 rounded-full bg-slate-800" />
+                   <div className="absolute bottom-4 left-4 flex items-center gap-2 px-3 py-1 bg-black/40 backdrop-blur-md rounded-lg">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[8px] font-black uppercase text-white/40 tracking-widest">PEER_NODE_00{i}</span>
+                   </div>
+                </div>
+              ))}
+           </div>
+           
+           {/* Control Bar Mock */}
+           <div className="flex justify-center h-20">
+              <div className="flex items-center gap-4 bg-white/5 px-8 rounded-full border border-white/10">
+                 {[1, 2, 3, 4, 5].map(i => (
+                   <div key={i} className="w-10 h-10 rounded-full bg-white/5 border border-white/5" />
+                 ))}
+                 <div className="w-24 h-10 rounded-full bg-red-500/10 border border-red-500/20" />
+              </div>
+           </div>
+        </div>
+
+        {/* Sidebar Mock */}
+        <div className="w-80 flex flex-col gap-6">
+           <div className="h-1/2 bg-white/5 rounded-[2.5rem] border border-white/5 p-6 space-y-4">
+              <div className="w-24 h-2 bg-white/10 rounded-full" />
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="flex items-center gap-3">
+                   <div className="w-8 h-8 rounded-full bg-white/5" />
+                   <div className="w-20 h-2 bg-white/5 rounded-full" />
+                </div>
+              ))}
+           </div>
+           <div className="flex-1 bg-white/5 rounded-[2.5rem] border border-white/5 p-6 flex flex-col justify-end gap-3">
+              <div className="w-full h-8 bg-white/5 rounded-xl" />
+              <div className="w-full h-10 bg-white/5 rounded-full" />
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home({ session }: HomeProps) {
   const navigate = useNavigate();
   const [meetingCode, setMeetingCode] = useState('');
@@ -28,7 +79,7 @@ export default function Home({ session }: HomeProps) {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="z-10 w-full max-w-md backdrop-blur-xl bg-white/5 rounded-3xl border border-red-500/30 p-8 shadow-2xl text-center space-y-6"
+          className="z-10 w-full max-md backdrop-blur-xl bg-white/5 rounded-3xl border border-red-500/30 p-8 shadow-2xl text-center space-y-6"
         >
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/50 mb-4">
             <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -36,28 +87,14 @@ export default function Home({ session }: HomeProps) {
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-white">Configuration Required</h1>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Supabase environment variables are missing. To use VoiceMeet, please add the following secrets in the AI Studio sidebar:
+              Supabase environment variables are missing. To use VoiceMeet, please add the following secrets in the AI Sidebar.
             </p>
           </div>
-          <div className="text-left bg-black/40 p-4 rounded-xl font-mono text-xs text-red-400 border border-red-500/20 space-y-2">
-            <p>VITE_SUPABASE_URL</p>
-            <p>VITE_SUPABASE_ANON_KEY</p>
-          </div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold pt-4">Check console for details</p>
+          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold pt-4">Check environment settings</p>
         </motion.div>
       </div>
     );
   }
-
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) toast.error('Failed to sign in with Google');
-  };
 
   const handleCreateMeeting = async () => {
     if (!displayName.trim()) {
@@ -69,28 +106,19 @@ export default function Home({ session }: HomeProps) {
     const code = nanoid(10).toLowerCase();
     
     try {
-      // Auto-copy invite link to clipboard for a delightful onboarding touch
       const inviteLink = `${window.location.origin}/meet/${code}`;
       await navigator.clipboard.writeText(inviteLink);
       toast.success('INVITE LINK COPIED', { 
-        description: 'Auto-cloned to clipboard for instant sharing.',
+        description: 'Auto-cloned to clipboard for sharing.',
         icon: '🔗'
       });
 
-      // Try to save to DB, but don't block if it fails or if user is anonymous
       if (isConfigured) {
-        await supabase
-          .from('meetings')
-          .insert({
-            code,
-            is_active: true,
-          });
+        await supabase.from('meetings').insert({ code, is_active: true });
       }
       
       navigate(`/meet/${code}?name=${encodeURIComponent(displayName)}&host=true`);
     } catch (error: any) {
-      console.warn('Meeting creation DB notice:', error);
-      // Still navigate even if DB save fails - the room exists in LiveKit dynamically
       navigate(`/meet/${code}?name=${encodeURIComponent(displayName)}&host=true`);
     } finally {
       setIsCreating(false);
@@ -99,97 +127,92 @@ export default function Home({ session }: HomeProps) {
 
   const handleJoinMeeting = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!meetingCode.trim()) {
-      toast.error('Please enter a meeting code');
-      return;
-    }
-    if (!displayName.trim()) {
-      toast.error('Please enter your name');
+    if (!meetingCode.trim() || !displayName.trim()) {
+      toast.error('All fields required');
       return;
     }
     navigate(`/meet/${meetingCode.trim().toLowerCase()}?name=${encodeURIComponent(displayName)}`);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
-      <main className="z-10 w-full max-w-md space-y-8" role="main">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500 shadow-xl shadow-blue-500/20 mb-4 mx-auto" aria-hidden="true">
-            <Video className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
+      <StaticAppPreview />
+      
+      <main className="z-10 w-full max-w-sm flex flex-col gap-10" role="main">
+        <div className="text-center space-y-4">
+          <motion.div 
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            className="w-16 h-16 rounded-[1.5rem] bg-white flex items-center justify-center mx-auto shadow-[0_20px_40px_rgba(255,255,255,0.15)]"
+          >
+            <Video className="w-8 h-8 text-black" />
+          </motion.div>
+          <div className="space-y-1">
+             <h1 className="text-3xl font-black uppercase tracking-tight text-white italic">VoiceMeet</h1>
+             <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] font-black">Encrypted Audio Mesh Node</p>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-white">VoiceMeet</h1>
-          <p className="text-slate-400 text-lg font-medium">Secure, high-fidelity audio conferencing.</p>
         </div>
 
-        <section className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-8 shadow-2xl space-y-6" aria-labelledby="join-heading">
+        <section className="glass-surface-heavy rounded-[2rem] border border-white/10 p-8 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] space-y-8" aria-labelledby="join-heading">
           <h2 id="join-heading" className="sr-only">Join or Create a Meeting</h2>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-4">
-              <Button 
+          <div className="space-y-8">
+            <Button 
                 onClick={handleCreateMeeting} 
                 disabled={isCreating}
-                aria-label="Start a new VoiceMeet meeting"
-                className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 gap-2"
+                className="w-full h-14 bg-white hover:bg-zinc-200 text-black rounded-2xl font-black text-xs uppercase tracking-[0.4em] transition-all shadow-[0_10px_20px_rgba(255,255,255,0.05)] active:scale-95"
               >
-                <Plus className="w-6 h-6" aria-hidden="true" />
-                {isCreating ? 'Initializing...' : 'Start New Meeting'}
-              </Button>
+                {isCreating ? 'SYNCING...' : 'INITIATE NEW MESH'}
+            </Button>
               
-              <div className="relative" aria-hidden="true">
-                <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
-                <span className="relative z-10 px-4 bg-[#0a0a0f] text-[10px] uppercase tracking-widest font-bold text-slate-600 left-1/2 -translate-x-1/2 transition-colors">OR JOIN EXISTING</span>
-              </div>
-
-              <form onSubmit={handleJoinMeeting} className="space-y-3">
-                <div className="space-y-1.5">
-                  <label htmlFor="meeting-code" className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Meeting Code</label>
-                  <Input 
-                    id="meeting-code"
-                    placeholder="e.g. abc-xyz-123" 
-                    value={meetingCode}
-                    onChange={(e) => setMeetingCode(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
-                    aria-required="true"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="display-name" className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Name</label>
-                  <Input 
-                    id="display-name"
-                    placeholder="Enter your display name" 
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
-                    aria-required="true"
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  disabled={!meetingCode || !displayName}
-                  variant="outline"
-                  aria-label="Join existing meeting with the provided code"
-                  className="w-full h-12 border-white/10 hover:bg-white/5 text-white rounded-xl font-bold"
-                >
-                  Join Room
-                </Button>
-              </form>
+            <div className="relative">
+              <div className="absolute inset-x-0 top-1/2 h-px bg-white/5" />
+              <span className="relative z-10 px-4 bg-[#0a0d14] text-[8px] uppercase tracking-[0.2em] font-black text-slate-700 left-1/2 -translate-x-1/2">LINK EXISTING NODE</span>
             </div>
+
+            <form onSubmit={handleJoinMeeting} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="display-name" className="text-[8px] uppercase tracking-[0.2em] font-black text-slate-600 ml-1">Node Identity</label>
+                <Input 
+                  id="display-name"
+                  placeholder="AUTHORIZE AS..." 
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="h-12 bg-black/40 border-white/5 rounded-xl text-white placeholder:text-zinc-800 font-bold text-center uppercase tracking-widest text-xs"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="meeting-code" className="text-[8px] uppercase tracking-[0.2em] font-black text-slate-600 ml-1">Mesh Key</label>
+                <Input 
+                  id="meeting-code"
+                  placeholder="EX: ALPHA-MESH-42" 
+                  value={meetingCode}
+                  onChange={(e) => setMeetingCode(e.target.value)}
+                  className="h-12 bg-black/40 border-white/5 rounded-xl text-white placeholder:text-zinc-800 font-bold text-center uppercase tracking-widest text-xs"
+                />
+              </div>
+              <Button 
+                type="submit"
+                disabled={!meetingCode || !displayName}
+                variant="ghost"
+                className="w-full h-12 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl font-black text-[9px] uppercase tracking-[0.3em] transition-all"
+              >
+                Join Signal
+              </Button>
+            </form>
           </div>
         </section>
 
-        <div className="flex justify-center gap-6 text-slate-500">
-           <div className="flex flex-col items-center gap-1">
-              <span className="text-xl">🔒</span>
-              <span className="text-[10px] uppercase font-bold tracking-tighter">SECURE</span>
-           </div>
-           <div className="flex flex-col items-center gap-1">
-              <span className="text-xl">📡</span>
-              <span className="text-[10px] uppercase font-bold tracking-tighter">LOW LATENCY</span>
-           </div>
-           <div className="flex flex-col items-center gap-1">
-              <span className="text-xl">💎</span>
-              <span className="text-[10px] uppercase font-bold tracking-tighter">48KHZ AUDIO</span>
-           </div>
+        <div className="flex justify-center gap-8 py-4 bg-white/[0.02] rounded-2xl border border-white/5">
+           {[ 
+             { icon: "🔒", label: "AES-256" }, 
+             { icon: "📡", label: "LOW-LATENCY" }, 
+             { icon: "💎", label: "48KHZ" } 
+           ].map(item => (
+             <div key={item.label} className="flex flex-col items-center gap-1.5 grayscale opacity-30">
+                <span className="text-sm">{item.icon}</span>
+                <span className="text-[7px] uppercase font-black tracking-widest text-white italic">{item.label}</span>
+             </div>
+           ))}
         </div>
       </main>
     </div>

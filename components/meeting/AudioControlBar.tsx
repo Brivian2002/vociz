@@ -67,7 +67,14 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
+  const triggerHaptic = (ms = 10) => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(ms);
+    }
+  };
+
   const toggleMic = async () => {
+    triggerHaptic();
     try {
       if (!localParticipant) {
         toast.error('Voice engine not ready');
@@ -86,11 +93,11 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const toggleHand = async () => {
+    triggerHaptic(20);
     const nextState = !isHandRaised;
     const newMetadata = { ...metadata, handRaised: nextState };
     await localParticipant.setMetadata(JSON.stringify(newMetadata));
     
-    // Broadcast hand raise to all nodes
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify({ 
       type: 'signal', 
@@ -114,6 +121,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const playChime = async () => {
+    triggerHaptic(5);
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.play().catch(e => console.error('Audio play blocked:', e));
 
@@ -136,6 +144,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const toggleScreenShare = async () => {
+    triggerHaptic();
     try {
       const nextState = !isScreenSharing;
       await localParticipant.setScreenShareEnabled(nextState);
@@ -151,6 +160,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const handleLeave = () => {
+    triggerHaptic(30);
     setShowExitConfirm(true);
   };
 
