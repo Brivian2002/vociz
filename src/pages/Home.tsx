@@ -69,6 +69,14 @@ export default function Home({ session }: HomeProps) {
     const code = nanoid(10).toLowerCase();
     
     try {
+      // Auto-copy invite link to clipboard for a delightful onboarding touch
+      const inviteLink = `${window.location.origin}/meet/${code}`;
+      await navigator.clipboard.writeText(inviteLink);
+      toast.success('INVITE LINK COPIED', { 
+        description: 'Auto-cloned to clipboard for instant sharing.',
+        icon: '🔗'
+      });
+
       // Try to save to DB, but don't block if it fails or if user is anonymous
       if (isConfigured) {
         await supabase
@@ -104,71 +112,70 @@ export default function Home({ session }: HomeProps) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
-      {/* Background Mesh Gradient Decor */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="z-10 w-full max-w-md space-y-8"
-      >
+      <main className="z-10 w-full max-w-md space-y-8" role="main">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500 shadow-xl shadow-blue-500/20 mb-4 mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500 shadow-xl shadow-blue-500/20 mb-4 mx-auto" aria-hidden="true">
             <Video className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight text-white">VoiceMeet</h1>
           <p className="text-slate-400 text-lg font-medium">Secure, high-fidelity audio conferencing.</p>
         </div>
 
-        <div className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-8 shadow-2xl space-y-6">
+        <section className="backdrop-blur-xl bg-white/5 rounded-3xl border border-white/10 p-8 shadow-2xl space-y-6" aria-labelledby="join-heading">
+          <h2 id="join-heading" className="sr-only">Join or Create a Meeting</h2>
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4">
               <Button 
                 onClick={handleCreateMeeting} 
                 disabled={isCreating}
+                aria-label="Start a new VoiceMeet meeting"
                 className="w-full h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 gap-2"
               >
-                <Plus className="w-6 h-6" />
+                <Plus className="w-6 h-6" aria-hidden="true" />
                 {isCreating ? 'Initializing...' : 'Start New Meeting'}
               </Button>
               
-              <div className="relative">
+              <div className="relative" aria-hidden="true">
                 <div className="absolute inset-x-0 top-1/2 h-px bg-white/10" />
                 <span className="relative z-10 px-4 bg-[#0a0a0f] text-[10px] uppercase tracking-widest font-bold text-slate-600 left-1/2 -translate-x-1/2 transition-colors">OR JOIN EXISTING</span>
               </div>
 
-              <div className="space-y-3">
+              <form onSubmit={handleJoinMeeting} className="space-y-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Meeting Code</label>
+                  <label htmlFor="meeting-code" className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Meeting Code</label>
                   <Input 
+                    id="meeting-code"
                     placeholder="e.g. abc-xyz-123" 
                     value={meetingCode}
                     onChange={(e) => setMeetingCode(e.target.value)}
                     className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                    aria-required="true"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Name</label>
+                  <label htmlFor="display-name" className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Your Name</label>
                   <Input 
+                    id="display-name"
                     placeholder="Enter your display name" 
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     className="h-12 bg-white/5 border-white/10 rounded-xl text-white placeholder:text-slate-600"
+                    aria-required="true"
                   />
                 </div>
                 <Button 
-                  onClick={handleJoinMeeting}
+                  type="submit"
                   disabled={!meetingCode || !displayName}
                   variant="outline"
+                  aria-label="Join existing meeting with the provided code"
                   className="w-full h-12 border-white/10 hover:bg-white/5 text-white rounded-xl font-bold"
                 >
                   Join Room
                 </Button>
-              </div>
+              </form>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="flex justify-center gap-6 text-slate-500">
            <div className="flex flex-col items-center gap-1">
@@ -184,7 +191,7 @@ export default function Home({ session }: HomeProps) {
               <span className="text-[10px] uppercase font-bold tracking-tighter">48KHZ AUDIO</span>
            </div>
         </div>
-      </motion.div>
+      </main>
     </div>
   );
 }

@@ -17,7 +17,9 @@ import {
   Code, 
   Video as VideoIcon, 
   Download,
-  Share
+  Share,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
@@ -27,6 +29,7 @@ import { RoomEvent } from 'livekit-client';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   id: string;
@@ -68,6 +71,7 @@ export default function ChatPanel({
 
   const [newMessage, setNewMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -85,6 +89,79 @@ export default function ChatPanel({
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setNewMessage(prev => prev + emojiData.emoji);
+  };
+
+  const handleSummarize = async () => {
+    if (messages.length < 2) {
+      toast.info('Insufficient data for intelligence mapping.');
+      return;
+    }
+
+    setIsSummarizing(true);
+    const api_key = process.env.GEMINI_API_KEY;
+    if (!api_key) {
+      toast.error('AI Mesh Key not found in environment.');
+      setIsSummarizing(false);
+      return;
+    }
+
+    try {
+      const gConfig = { apiKey: api_key };
+      const ai = new GoogleGenAI(gConfig);
+      
+      const sessionHistory = messages
+        .filter(m => m.message)
+        .map(m => `${m.display_name}: ${m.message}`)
+        .join('\n');
+
+      const prompt = `You are a professional session analyst for VoiceMeet. 
+      Analyze the following chat history from a communication node and provide a concise, high-fidelity narrative summary of the key points discussed. 
+      Maintain a professional, authoritative tone. Format as markdown.
+      
+      HISTORY:
+      ${sessionHistory}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      });
+
+      const summaryText = response.text;
+      
+      // Send as an "AI Intelligence" message
+      const msgId = crypto.randomUUID();
+      const timestamp = new Date().toISOString();
+      const aiMsg: Message = {
+        id: msgId,
+        meeting_code: roomCode,
+        user_id: 'gemini-ai',
+        display_name: 'AI SYSTEM',
+        message: `### SESSION INTELLIGENCE SUMMARY\n\n${summaryText}`,
+        attachments: [],
+        created_at: timestamp
+      };
+
+      setMessages(prev => [...prev, aiMsg]);
+      
+      // Broadcast to others
+      const encoder = new TextEncoder();
+      const payload = {
+        type: 'chat',
+        id: msgId,
+        display_name: 'AI SYSTEM',
+        message: aiMsg.message,
+        attachments: [],
+        created_at: timestamp
+      };
+      await localParticipant.publishData(encoder.encode(JSON.stringify(payload)), { reliable: true });
+
+      toast.success('Intelligence mapped and broadcast.');
+    } catch (err) {
+      console.error('AI summary failure:', err);
+      toast.error('Failed to engage intelligence mesh.');
+    } finally {
+      setIsSummarizing(false);
+    }
   };
 
   const handleExportHistory = () => {
@@ -256,10 +333,10 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-black overflow-hidden border-white/20">
+    <div className="flex flex-col h-full bg-black overflow-hidden border-white/20" role="region" aria-label="In-Call Message Hub">
       <div className="p-3 border-b border-black flex items-center justify-between bg-white text-black shadow-sm">
         <div className="flex flex-col">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">IN CALL MESSAGE</h3>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">IN CALL MESSAGE</h2>
           <div className="flex items-center gap-1.5 opacity-40">
              <Zap className="w-2.5 h-2.5" />
              <span className="text-[7px] font-black uppercase tracking-tighter italic">Secure Node Sync</span>
@@ -269,19 +346,39 @@ export default function ChatPanel({
           <Button 
             variant="ghost" 
             size="icon" 
+            onClick={handleSummarize} 
+            disabled={isSummarizing}
+            className="w-8 h-8 rounded-full hover:bg-black/5 text-blue-600 relative overflow-hidden"
+            aria-label="Generate AI intelligence summary of chat history"
+          >
+            {isSummarizing ? (
+               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+               <Sparkles className="w-3.5 h-3.5" />
+            )}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
             onClick={handleExportHistory} 
             className="w-8 h-8 rounded-full hover:bg-black/5 text-black"
-            title="Export History"
+            aria-label="Export communication log as PDF"
           >
             <Download className="w-3.5 h-3.5" />
           </Button>
           {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} className="w-8 h-8 rounded-full hover:bg-black/5 text-black">
-            <X className="w-4 h-4" />
-          </Button>
-        )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose} 
+              className="w-8 h-8 rounded-full hover:bg-black/5 text-black"
+              aria-label="Close message hub"
+            >
+              <X className="w-4 h-4 text-black" />
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
 
       <input 
         type="file" 

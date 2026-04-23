@@ -315,7 +315,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
       setAttendance(prev => [...prev, { name: displayName, joinAt: now.toLocaleTimeString(), leaveAt: 'ACTIVE' }]);
     } catch (err: any) {
       console.error('Join error:', err);
-      toast.error(`Connection failed: ${err.message}`);
+      setError(err.message || 'Mesh connectivity timeout');
     } finally {
       setIsJoining(false);
     }
@@ -339,6 +339,42 @@ export default function Meeting({ session: _session }: MeetingProps) {
     });
     doc.save(`Attendance_${code}.pdf`);
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-slate-100 font-sans flex flex-col items-center justify-center p-6 relative overflow-hidden" role="alert">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[120px] pointer-events-none" />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="z-10 w-full max-w-sm backdrop-blur-xl bg-white/5 rounded-3xl border border-red-500/30 p-8 shadow-2xl text-center space-y-6"
+        >
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-red-500/20 border border-red-500/50 mb-4">
+            <ShieldAlert className="w-8 h-8 text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-xl font-bold text-white uppercase tracking-widest">Mesh Link Failure</h1>
+            <p className="text-slate-400 text-xs leading-relaxed uppercase font-bold tracking-tighter">
+              {error}
+            </p>
+          </div>
+          <Button 
+            onClick={() => { setError(null); handleJoin(); }}
+            className="w-full h-12 bg-red-600 hover:bg-red-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest"
+          >
+            Retry Synchronization
+          </Button>
+          <Button 
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="w-full text-[8px] font-black uppercase text-slate-500 hover:text-white"
+          >
+            Return to Command Center
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -378,6 +414,14 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
             <div className="space-y-10">
               <div className="flex flex-col items-center gap-6">
+                <div className="text-center space-y-3 p-4 rounded-2xl bg-white/[0.02] border border-white/5 border-dashed">
+                   <MicOff className="w-5 h-5 text-amber-500 mx-auto" />
+                   <p className="text-[9px] font-black uppercase text-slate-400 leading-tight">
+                     Hardware mesh requires microphone permission. <br/>
+                     <span className="text-white/60">VoiceMeet will sync with your standard audio input.</span>
+                   </p>
+                </div>
+
                 <div className="relative">
                    <div className="w-20 h-20 rounded-full border border-white/5 flex items-center justify-center p-1 bg-white/[0.01] relative z-10">
                       <div className="w-full h-full rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center shadow-inner relative overflow-hidden">
@@ -452,14 +496,19 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
       <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
-      <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative">
-        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col">
+      <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative" role="main">
+        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col" role="region" aria-label="Participant Stage">
            <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
            <div className="absolute top-4 right-6 z-40">
               <MeetingTimer />
            </div>
            <ParticipantStage />
         </div>
+
+        <section aria-live="polite" className="sr-only">
+           {/* Screen reader only notifications for dynamic events */}
+           {messages.length > 0 && `New message from ${messages[messages.length - 1].display_name}`}
+        </section>
 
         <AnimatePresence>
           {activeTab !== 'chat' && (
@@ -476,12 +525,13 @@ export default function Meeting({ session: _session }: MeetingProps) {
                 variant="outline"
                 size="icon"
                 onClick={() => setActiveTab('chat')}
+                aria-label={`Open messages. ${unreadCount > 0 ? unreadCount + ' unread' : ''}`}
                 className="w-14 h-14 rounded-2xl bg-[#090b14]/80 backdrop-blur-xl border-white/10 shadow-2xl hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all group relative cursor-grab active:cursor-grabbing border-2"
               >
                 <div className="absolute inset-0 bg-blue-500/10 rounded-2xl blur-xl group-hover:bg-blue-500/20 transition-all" />
-                <MessageCircle className="w-6 h-6 relative z-10" />
+                <MessageCircle className="w-6 h-6 relative z-10" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-black rounded-lg min-w-[22px] h-6 px-1.5 flex items-center justify-center border-2 border-black z-20 shadow-xl">
+                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -top-2 -right-2 bg-white text-black text-[10px] font-black rounded-lg min-w-[22px] h-6 px-1.5 flex items-center justify-center border-2 border-black z-20 shadow-xl" aria-hidden="true">
                     {unreadCount}
                   </motion.span>
                 )}
@@ -498,7 +548,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="fixed bottom-28 right-8 z-50 w-[280px] h-[340px] bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto"
+              role="complementary"
+              aria-label="In-Call Messages"
+              className="fixed bottom-28 right-8 z-50 w-[280px] h-[400px] bg-black rounded-[2rem] overflow-hidden border border-white/20 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] flex flex-col pointer-events-auto"
             >
                <ChatPanel 
                  roomCode={normalizedCode!} 
@@ -517,6 +569,8 @@ export default function Meeting({ session: _session }: MeetingProps) {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
+              role="complementary"
+              aria-label="Node Directory"
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={cn(
                 "fixed lg:relative right-0 top-0 bottom-0 z-40 lg:z-10",

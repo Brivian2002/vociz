@@ -10,13 +10,15 @@ import {
   Users,
   Settings2,
   X,
-  Target
+  Target,
+  AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import WaveformVisualizer from './WaveformVisualizer';
 
 interface AudioControlBarProps {
   isHost: boolean;
@@ -28,17 +30,27 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   const { localParticipant } = useLocalParticipant();
   const navigate = useNavigate();
   const [isFocusMode, setIsFocusMode] = useState(true);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const isMicrophoneEnabled = localParticipant.isMicrophoneEnabled;
   const metadata = JSON.parse(localParticipant.metadata || '{}');
   const isHandRaised = metadata.handRaised;
+
+  // Accessibility: prefers-reduced-motion check
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   // Expert: Visibility API for "Social Media Restriction" deterrent
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         setIsFocusMode(false);
-        // We can't stop them, but we can alert them and peers if we wanted
         toast.warning('Node Focus Lost', {
           description: 'Connection prioritized. Please return to the meeting to ensure link stability.',
           icon: <Target className="w-4 h-4 text-amber-500" />
@@ -99,11 +111,9 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const playChime = async () => {
-    // 1. Play locally
     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
     audio.play().catch(e => console.error('Audio play blocked:', e));
 
-    // 2. Broadcast to all peers
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify({ 
       type: 'signal', 
@@ -123,78 +133,119 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   };
 
   const handleLeave = () => {
+    setShowExitConfirm(true);
+  };
+
+  const confirmLeave = () => {
     navigate('/');
   };
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 flex flex-col items-center gap-4 pointer-events-none">
-      <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
-        {/* Toggle Chat - Now before Hand Raise */}
+    <footer className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 flex flex-col items-center gap-4 pointer-events-none" role="contentinfo">
+      <AnimatePresence>
+        {showExitConfirm && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="glass-surface-heavy p-4 rounded-2xl border border-red-500/30 mb-2 pointer-events-auto flex items-center gap-4 bg-black/80"
+            role="alertdialog"
+            aria-labelledby="exit-confirm-title"
+          >
+            <div className="flex flex-col gap-1">
+              <span id="exit-confirm-title" className="text-[10px] font-black uppercase text-white tracking-widest flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                Terminate Link?
+              </span>
+              <span className="text-[8px] text-slate-500 uppercase font-bold">You will be disconnected from the mesh.</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowExitConfirm(false)} className="text-[8px] font-black uppercase tracking-widest text-slate-400 hover:bg-white/5 h-8">Cancel</Button>
+              <Button size="sm" onClick={confirmLeave} className="text-[8px] font-black uppercase tracking-widest bg-red-600 hover:bg-red-500 text-white h-8 px-4 rounded-lg">Disconnect</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto relative">
+        {/* Toggle Chat */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('chat')}
+          aria-label={activeTab === 'chat' ? "Close Messages" : "Open Messages"}
+          aria-pressed={activeTab === 'chat'}
           className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
+            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none",
             activeTab === 'chat' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
           )}
-          title="Toggle Messages"
         >
-          {activeTab === 'chat' ? <X className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
+          {activeTab === 'chat' ? <X className="w-5 h-5" aria-hidden="true" /> : <MessageSquare className="w-5 h-5" aria-hidden="true" />}
         </button>
 
         {/* Toggle Users Directory */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('participants')}
+          aria-label={activeTab === 'participants' ? "Close Participant Directory" : "Open Participant Directory"}
+          aria-pressed={activeTab === 'participants'}
           className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
+            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none",
             activeTab === 'participants' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
           )}
-          title="Node Directory"
         >
-          {activeTab === 'participants' ? <X className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+          {activeTab === 'participants' ? <X className="w-5 h-5" aria-hidden="true" /> : <Users className="w-5 h-5" aria-hidden="true" />}
         </button>
 
-        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" />
+        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
 
         {/* Mute */}
-        <button 
-          type="button"
-          onClick={toggleMic}
-          className={cn(
-            "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300 relative group overflow-hidden",
-            isMicrophoneEnabled 
-              ? "bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30" 
-              : "bg-red-600/20 border border-red-500/30 hover:bg-red-600/30"
-          )}
-          title={isMicrophoneEnabled ? "Mute" : "Unmute"}
-        >
-          {isMicrophoneEnabled ? <Mic className="w-6 h-6 text-emerald-400" /> : <MicOff className="w-6 h-6 text-red-400" />}
-          {isMicrophoneEnabled && (
-             <motion.div 
-               animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0, 0.1] }}
-               transition={{ duration: 2, repeat: Infinity }}
-               className="absolute inset-0 bg-emerald-500 rounded-full"
-             />
-          )}
-        </button>
+        <div className="relative group">
+          <button 
+            type="button"
+            onClick={toggleMic}
+            aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
+            aria-pressed={!isMicrophoneEnabled}
+            className={cn(
+              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden focus:ring-2 focus:ring-emerald-500 focus:outline-none",
+              isMicrophoneEnabled 
+                ? "bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30" 
+                : "bg-red-600/20 border border-red-500/30 hover:bg-red-600/30"
+            )}
+          >
+            {isMicrophoneEnabled ? <Mic className="w-6 h-6 text-emerald-400" aria-hidden="true" /> : <MicOff className="w-6 h-6 text-red-400" aria-hidden="true" />}
+            {isMicrophoneEnabled && !prefersReducedMotion && (
+               <motion.div 
+                 animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0, 0.1] }}
+                 transition={{ duration: 2, repeat: Infinity }}
+                 className="absolute inset-0 bg-emerald-500 rounded-full"
+                 aria-hidden="true"
+               />
+            )}
+          </button>
+          
+          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+             <WaveformVisualizer className="scale-75" />
+          </div>
+        </div>
         
         {/* Hand */}
         <button 
           type="button"
           onClick={toggleHand}
+          aria-label={isHandRaised ? "Lower Hand" : "Raise Hand"}
+          aria-pressed={isHandRaised}
           className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all relative overflow-hidden",
+            "w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all relative overflow-hidden focus:ring-2 focus:ring-amber-500 focus:outline-none",
             isHandRaised ? "bg-amber-600/20 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.2)]" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
           )}
-          title="Raise Hand"
         >
-          <span className={cn("text-xl transition-transform", isHandRaised && "scale-125")}>✋</span>
-          {isHandRaised && (
+          <span className={cn("text-xl transition-transform", isHandRaised && "scale-125")} aria-hidden="true">✋</span>
+          {isHandRaised && !prefersReducedMotion && (
              <motion.div 
                animate={{ y: [0, -10, 0] }}
                transition={{ duration: 1.5, repeat: Infinity }}
                className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full"
+               aria-hidden="true"
              />
           )}
         </button>
@@ -204,10 +255,10 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
           <button 
             type="button"
             onClick={playChime}
-            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center group transition-colors hover:bg-blue-600/30 shadow-xl shadow-blue-900/10"
-            title="Chime Room"
+            aria-label="Broadcast Room Chime"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-600/20 border border-blue-500/30 flex items-center justify-center group transition-colors hover:bg-blue-600/30 focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
-            <Bell className="w-5 h-5 md:w-6 md:h-6 text-blue-400 group-hover:rotate-12 transition-transform" />
+            <Bell className="w-5 h-5 md:w-6 md:h-6 text-blue-400 group-hover:rotate-12 transition-transform" aria-hidden="true" />
           </button>
         )}
 
@@ -215,15 +266,16 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
         <button 
           type="button"
           onClick={handleLeave}
-          className="px-4 md:px-6 h-10 md:h-12 rounded-full bg-red-600/10 border border-red-600/30 flex items-center gap-2 text-red-500 font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl hover:bg-red-600/20 transition-all active:scale-95"
+          aria-label="Leave Meeting Session"
+          className="px-4 md:px-6 h-10 md:h-12 rounded-full bg-red-600/10 border border-red-600/30 flex items-center gap-2 text-red-500 font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl hover:bg-red-600/20 transition-all active:scale-95 focus:ring-2 focus:ring-red-500 focus:outline-none"
         >
-          <LogOut className="w-4 h-4 md:w-5 md:h-5" />
+          <LogOut className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
           <span className="hidden md:inline">Exit Session</span>
         </button>
       </div>
       
       {/* Realtime Network Status Indicator */}
-      <div className="hidden md:flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="hidden md:flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500" aria-live="polite">
          <div className={cn(
            "flex items-center gap-3 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full border transition-all duration-500",
            isFocusMode ? "border-white/5" : "border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
@@ -237,7 +289,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
                  )}>
                    {isFocusMode ? (localParticipant.connectionQuality?.toUpperCase() || 'CONNECTING') : 'FOCUS LOST'}
                  </span>
-                 <div className="flex gap-0.5 items-end h-2.5">
+                 <div className="flex gap-0.5 items-end h-2.5" aria-hidden="true">
                     {[...Array(4)].map((_, i) => {
                       const quality = localParticipant.connectionQuality;
                       const bars = quality === 'excellent' ? 4 : quality === 'good' ? 3 : quality === 'poor' ? 1 : 0;

@@ -147,6 +147,7 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                     {isHandRaised && (
                        <button
                          onClick={() => isHost && handleLowerHand(p)}
+                         aria-label={isHost ? `Lower hand for ${displayName}` : `${displayName} has their hand raised`}
                          className={cn(
                            "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
                            isHost ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
@@ -167,10 +168,10 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
                     {isHost && !isLocal && (
                        <button 
                         onClick={() => handleMuteParticipant(p)}
+                        aria-label={`Remote suppress node: Mute ${displayName}`}
                         className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 scale-95 hover:scale-100 hover:text-white hover:border-red-500 transition-all ml-0.5 shadow-lg shadow-red-500/10 group/mute"
-                        title="Remote Suppress Node"
                       >
-                        <ShieldAlert className="w-4 h-4 group-hover/mute:animate-pulse" />
+                        <ShieldAlert className="w-4 h-4 group-hover/mute:animate-pulse" aria-hidden="true" />
                       </button>
                     )}
                   </div>
