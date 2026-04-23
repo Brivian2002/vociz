@@ -11,7 +11,9 @@ import {
   Settings2,
   X,
   Target,
-  AlertCircle
+  AlertCircle,
+  MonitorUp,
+  MonitorOff
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -35,6 +37,7 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
   const isMicrophoneEnabled = localParticipant.isMicrophoneEnabled;
   const metadata = JSON.parse(localParticipant.metadata || '{}');
   const isHandRaised = metadata.handRaised;
+  const isScreenSharing = localParticipant.isScreenShareEnabled;
 
   // Accessibility: prefers-reduced-motion check
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -129,6 +132,21 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
       });
     } catch (err) {
       console.error('Failed to broadcast chime:', err);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    try {
+      const nextState = !isScreenSharing;
+      await localParticipant.setScreenShareEnabled(nextState);
+      
+      toast.success(nextState ? 'Screen Sharing Active' : 'Screen Sharing Terminated', {
+        className: nextState ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-white',
+        description: nextState ? 'Participants can now view your display node.' : 'Display broadcast stopped.'
+      });
+    } catch (error: any) {
+      console.error('Screen share error:', error);
+      toast.error('Screen sharing transition failed.');
     }
   };
 
@@ -245,6 +263,28 @@ export default function AudioControlBar({ isHost, onToggleTab, activeTab }: Audi
                animate={{ y: [0, -10, 0] }}
                transition={{ duration: 1.5, repeat: Infinity }}
                className="absolute top-0 right-0 w-2 h-2 bg-amber-500 rounded-full"
+               aria-hidden="true"
+             />
+          )}
+        </button>
+        
+        {/* Screen Share */}
+        <button 
+          type="button"
+          onClick={toggleScreenShare}
+          aria-label={isScreenSharing ? "Stop Screen Sharing" : "Start Screen Sharing"}
+          aria-pressed={isScreenSharing}
+          className={cn(
+            "w-10 h-10 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all relative overflow-hidden focus:ring-2 focus:ring-blue-500 focus:outline-none",
+            isScreenSharing ? "bg-blue-600/20 border-blue-500/50 shadow-[0_0_20px_rgba(37,99,235,0.2)] text-blue-400" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+          )}
+        >
+          {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <MonitorUp className="w-5 h-5" />}
+          {isScreenSharing && !prefersReducedMotion && (
+             <motion.div 
+               animate={{ opacity: [0, 1, 0] }}
+               transition={{ duration: 2, repeat: Infinity }}
+               className="absolute inset-0 bg-blue-500/10"
                aria-hidden="true"
              />
           )}

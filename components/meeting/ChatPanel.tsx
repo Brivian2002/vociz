@@ -14,7 +14,10 @@ import {
   X, 
   Bold, 
   Italic, 
+  Strikethrough,
   Code, 
+  SquareCode,
+  Link,
   Video as VideoIcon, 
   Download,
   Share,
@@ -83,8 +86,12 @@ export default function ChatPanel({
     }
   }, [messages]);
 
-  const insertFormat = (tag: string) => {
-    setNewMessage(prev => `${prev}${tag}${tag}`);
+  const insertFormat = (tag: string, endTag?: string) => {
+    setNewMessage(prev => `${prev}${tag}${endTag || tag}`);
+  };
+
+  const insertLink = () => {
+    setNewMessage(prev => `${prev}[desc](url)`);
   };
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
@@ -454,17 +461,27 @@ export default function ChatPanel({
 
       {/* Advanced Formatting Toolbar */}
       <div className="px-3 py-1.5 border-t border-white/5 bg-white/[0.01] flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('**')}>
+          <Button variant="ghost" size="icon" title="Bold" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('**')}>
             <Bold className="w-3 h-3 text-slate-500" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('*')}>
+          <Button variant="ghost" size="icon" title="Italic" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('*')}>
             <Italic className="w-3 h-3 text-slate-500" />
           </Button>
-          <Button variant="ghost" size="icon" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('`')}>
-            <Code className="w-3 h-3 text-slate-500" />
+          <Button variant="ghost" size="icon" title="Strikethrough" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('~~')}>
+            <Strikethrough className="w-3 h-3 text-slate-500" />
           </Button>
           <div className="w-px h-3 bg-white/10 mx-1" />
-          <Button variant="ghost" size="icon" className="w-7 h-7 hover:bg-white/5" onClick={() => fileInputRef.current?.click()}>
+          <Button variant="ghost" size="icon" title="Inline Code" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('`')}>
+            <Code className="w-3 h-3 text-slate-500" />
+          </Button>
+          <Button variant="ghost" size="icon" title="Code Block" className="w-7 h-7 hover:bg-white/5" onClick={() => insertFormat('```\n', '\n```')}>
+            <SquareCode className="w-3 h-3 text-slate-500" />
+          </Button>
+          <Button variant="ghost" size="icon" title="Insert Link" className="w-7 h-7 hover:bg-white/5" onClick={insertLink}>
+            <Link className="w-3 h-3 text-slate-500" />
+          </Button>
+          <div className="w-px h-3 bg-white/10 mx-1" />
+          <Button variant="ghost" size="icon" title="Attach File" className="w-7 h-7 hover:bg-white/5" onClick={() => fileInputRef.current?.click()}>
             <Paperclip className="w-3 h-3 text-slate-500" />
           </Button>
       </div>

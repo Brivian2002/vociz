@@ -12,7 +12,10 @@ import {
   Target,
   MoreVertical,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  UserMinus,
+  UserCheck,
+  UserX
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -21,7 +24,17 @@ import { ConnectionQuality } from 'livekit-client';
 import { toast } from 'sonner';
 import MetalAvatar from './MetalAvatar';
 
-export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
+export default function ParticipantsPanel({ 
+  isHost, 
+  waitingParticipants = [],
+  onApprove,
+  onDeny
+}: { 
+  isHost: boolean,
+  waitingParticipants?: any[],
+  onApprove?: (id: string) => void,
+  onDeny?: (id: string) => void
+}) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
@@ -41,6 +54,32 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
       toast.success(`Mute command sent to ${p.identity}`);
     } catch (err) {
       toast.error('Failed to send mute command');
+    }
+  };
+
+  const handleUnmuteParticipant = async (p: any) => {
+    if (!isHost) return;
+    try {
+      const encoder = new TextEncoder();
+      const payload = JSON.stringify({ type: 'signal', action: 'unmute-request', targetSid: p.sid });
+      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
+      toast.info(`Unmute request sent to ${p.identity}`);
+    } catch (err) {
+      toast.error('Failed to transmit request');
+    }
+  };
+
+  const handleRemoveParticipant = async (p: any) => {
+    if (!isHost) return;
+    if (!confirm(`Are you sure you want to terminate link for node ${p.identity}?`)) return;
+    
+    try {
+      const encoder = new TextEncoder();
+      const payload = JSON.stringify({ type: 'signal', action: 'remove', targetSid: p.sid });
+      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
+      toast.error(`Node ${p.identity} removal command broadcast.`);
+    } catch (err) {
+      toast.error('Failed to broadcast removal command');
     }
   };
 
@@ -92,93 +131,162 @@ export default function ParticipantsPanel({ isHost }: { isHost: boolean }) {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-2">
-          <AnimatePresence mode="popLayout">
-            {participants.map((p) => {
-              const isLocal = p.sid === localParticipant?.sid;
-              const metadata = JSON.parse(p.metadata || '{}');
-              const displayName = metadata.name || p.identity || 'Anonymous';
-              const isHandRaised = metadata.handRaised;
-              const isMuted = !p.isMicrophoneEnabled;
-              const isActiveSpeaker = p.isSpeaking;
-              const conn = getConnectionInfo(p.connectionQuality);
-
-              return (
-                <motion.div 
-                  key={p.sid}
-                  layout
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  className={cn(
-                    "flex items-center gap-4 p-3 rounded-full transition-all duration-500 group relative border",
-                    isLocal ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.02] border-transparent hover:border-white/5",
-                    isActiveSpeaker && "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_20px_rgba(16,185,129,0.1)]",
-                    isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"
-                  )}
-                >
-                  <div className="relative z-10 shrink-0">
-                    <MetalAvatar name={displayName} size={42} isSpeaking={isActiveSpeaker} />
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                       <span className={cn(
-                         "text-xs font-black uppercase tracking-tight truncate",
-                         isActiveSpeaker ? "text-emerald-400" : "text-white"
-                       )}>
-                         {displayName}
-                       </span>
-                       {isLocal && <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">You</span>}
+        <div className="p-4 space-y-4">
+          {/* Waiting Room Section (Host Only) */}
+          {isHost && waitingParticipants.length > 0 && (
+            <div className="space-y-2 mb-6">
+              <h3 className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-3">
+                <Activity className="w-3 h-3 animate-pulse" />
+                Inbound Link Requests ({waitingParticipants.length})
+              </h3>
+              <AnimatePresence>
+                {waitingParticipants.map((p) => (
+                  <motion.div
+                    key={p.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-lg shadow-amber-500/5"
+                  >
+                    <div className="shrink-0">
+                      <MetalAvatar name={p.name} size={32} />
                     </div>
-                    
-                    <div className="flex flex-col gap-0.5 mt-0.5">
-                       <div className={cn("flex items-center gap-1 text-[8px] font-black uppercase tracking-widest", conn.color)}>
-                         {conn.icon}
-                         {conn.label}
-                         {metadata.joinTimestamp && (
-                            <span className="text-slate-600 ml-0.5 opacity-50">• {Math.floor((now - metadata.joinTimestamp)/60000)}m Ago</span>
-                         )}
-                       </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black text-white uppercase truncate">{p.name}</p>
+                      <p className="text-[7px] text-amber-500/60 font-black uppercase tracking-tighter">Awaiting Authorization</p>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 relative z-10">
-                    {isHandRaised && (
-                       <button
-                         onClick={() => isHost && handleLowerHand(p)}
-                         aria-label={isHost ? `Lower hand for ${displayName}` : `${displayName} has their hand raised`}
-                         className={cn(
-                           "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
-                           isHost ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
-                         )}
-                       >
-                         <Hand className="w-4 h-4" />
-                       </button>
-                    )}
-                    
-                    <div className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
-                      isMuted ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
-                      isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
-                    )}>
-                      {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className={cn("w-4 h-4", isActiveSpeaker && "animate-pulse")} />}
-                    </div>
-
-                    {isHost && !isLocal && (
-                       <button 
-                        onClick={() => handleMuteParticipant(p)}
-                        aria-label={`Remote suppress node: Mute ${displayName}`}
-                        className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 scale-95 hover:scale-100 hover:text-white hover:border-red-500 transition-all ml-0.5 shadow-lg shadow-red-500/10 group/mute"
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onApprove?.(p.id)}
+                        className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-black transition-all shadow-lg shadow-emerald-500/10"
+                        title="Authorize Node"
                       >
-                        <ShieldAlert className="w-4 h-4 group-hover/mute:animate-pulse" aria-hidden="true" />
+                        <UserCheck className="w-3.5 h-3.5" />
                       </button>
+                      <button
+                        onClick={() => onDeny?.(p.id)}
+                        className="w-7 h-7 rounded-lg bg-red-500/20 border border-red-500/30 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-black transition-all shadow-lg shadow-red-500/10"
+                        title="Deny Node"
+                      >
+                        <UserX className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div className="w-full h-px bg-white/5 my-4" />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Active Peers</h3>
+            <AnimatePresence mode="popLayout">
+              {participants.map((p) => {
+                const isLocal = p.sid === localParticipant?.sid;
+                const metadata = JSON.parse(p.metadata || '{}');
+                const displayName = metadata.name || p.identity || 'Anonymous';
+                const isHandRaised = metadata.handRaised;
+                const isMuted = !p.isMicrophoneEnabled;
+                const isActiveSpeaker = p.isSpeaking;
+                const conn = getConnectionInfo(p.connectionQuality);
+
+                return (
+                  <motion.div 
+                    key={p.sid}
+                    layout
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className={cn(
+                      "flex items-center gap-4 p-3 rounded-full transition-all duration-500 group relative border",
+                      isLocal ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.02] border-transparent hover:border-white/5",
+                      isActiveSpeaker && "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_20px_rgba(16,185,129,0.1)]",
+                      isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"
                     )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                  >
+                    <div className="relative z-10 shrink-0">
+                      <MetalAvatar name={displayName} size={42} isSpeaking={isActiveSpeaker} />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                         <span className={cn(
+                           "text-xs font-black uppercase tracking-tight truncate",
+                           isActiveSpeaker ? "text-emerald-400" : "text-white"
+                         )}>
+                           {displayName}
+                         </span>
+                         {isLocal && <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-1.5 py-0.5 rounded-full bg-blue-500/5">You</span>}
+                      </div>
+                      
+                      <div className="flex flex-col gap-0.5 mt-0.5">
+                         <div className={cn("flex items-center gap-1 text-[8px] font-black uppercase tracking-widest", conn.color)}>
+                           {conn.icon}
+                           {conn.label}
+                           {metadata.joinTimestamp && (
+                              <span className="text-slate-600 ml-0.5 opacity-50">• {Math.floor((Date.now() - metadata.joinTimestamp)/60000)}m Ago</span>
+                           )}
+                         </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 relative z-10">
+                      {isHandRaised && (
+                         <button
+                           onClick={() => isHost && handleLowerHand(p)}
+                           aria-label={isHost ? `Lower hand for ${displayName}` : `${displayName} has their hand raised`}
+                           className={cn(
+                             "w-9 h-9 rounded-xl flex items-center justify-center transition-all",
+                             isHost ? "bg-amber-500/20 border border-amber-500/40 text-amber-500 hover:bg-amber-500 hover:text-black" : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+                           )}
+                         >
+                           <Hand className="w-4 h-4" />
+                         </button>
+                      )}
+                      
+                      <div className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center border transition-all relative overflow-hidden",
+                        isMuted ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
+                        isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20"
+                      )}>
+                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className={cn("w-4 h-4", isActiveSpeaker && "animate-pulse")} />}
+                      </div>
+
+                      {isHost && !isLocal && (
+                        <div className="flex items-center gap-1 ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {isMuted ? (
+                            <button 
+                              onClick={() => handleUnmuteParticipant(p)}
+                              aria-label={`Request unmute for ${displayName}`}
+                              className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-lg shadow-blue-500/10"
+                            >
+                              <Mic className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => handleMuteParticipant(p)}
+                              aria-label={`Remote suppress node: Mute ${displayName}`}
+                              className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-500 hover:bg-orange-500 hover:text-white transition-all shadow-lg shadow-orange-500/10"
+                            >
+                              <MicOff className="w-4 h-4" />
+                            </button>
+                          )}
+                          
+                          <button 
+                            onClick={() => handleRemoveParticipant(p)}
+                            aria-label={`Terminate node link: Remove ${displayName}`}
+                            className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         </div>
       </ScrollArea>
     </div>

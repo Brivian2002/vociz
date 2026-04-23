@@ -27,7 +27,8 @@ import {
   Scale, 
   MousePointer2,
   Bell,
-  MicOff
+  MicOff,
+  UserPlus
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ function RoomEventListener({
 }) {
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onDataReceived = (payload: Uint8Array, participant?: any) => {
@@ -95,6 +97,24 @@ function RoomEventListener({
             const metadata = JSON.parse(localParticipant.metadata || '{}');
             localParticipant.setMetadata(JSON.stringify({ ...metadata, handRaised: false }));
             toast.info('Host lowered your hand.');
+          }
+
+          if (data.action === 'unmute-request' && data.targetSid === localParticipant.sid) {
+            toast('Host requested you to unmute', {
+              description: 'Click the microphone icon to enable your audio node.',
+              icon: <Zap className="w-4 h-4 text-blue-400" />,
+              action: {
+                label: 'Unmute',
+                onClick: () => localParticipant.setMicrophoneEnabled(true)
+              }
+            });
+          }
+
+          if (data.action === 'remove' && data.targetSid === localParticipant.sid) {
+            toast.error('LINK TERMINATED: Removed by Host', {
+              description: 'Your connection to this node has been forcefully closed.'
+            });
+            setTimeout(() => navigate('/'), 2000);
           }
         }
 
@@ -177,40 +197,146 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
+  const normalizedCode = code?.trim().toLowerCase();
+  const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
+  const isCreator = searchParams.get('host') === 'true';
+
   const [token, setToken] = useState<string | null>(null);
   const [liveKitUrl, setLiveKitUrl] = useState<string>(import.meta.env.VITE_LIVEKIT_URL || import.meta.env.NEXT_PUBLIC_LIVEKIT_URL || '');
-  const [isHost, setIsHost] = useState(false);
+  const [isHost, setIsHost] = useState(isCreator);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Mission-critical: Resolve loading state once mesh is initialized
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
-  }, []);
-
+  const [waitingParticipants, setWaitingParticipants] = useState<any[]>([]);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [myRequestId, setMyRequestId] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
   const [joinTime, setJoinTime] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [attendance, setAttendance] = useState<any[]>([]);
-
-  const normalizedCode = code?.trim().toLowerCase();
   const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
   const [unreadCount, setUnreadCount] = useState(0);
-  const [displayName, setDisplayName] = useState(searchParams.get('name') || '');
   const [messages, setMessages] = useState<Message[]>([]);
-  const isCreator = searchParams.get('host') === 'true';
 
+  // Intent & Waiting Room Logic
   useEffect(() => {
-    if (isCreator) setIsHost(true);
-  }, [isCreator]);
+    if (!normalizedCode) return;
+
+    const channel = supabase.channel(`waiting:${normalizedCode}`)
+      .on('broadcast', { event: 'join-request' }, (payload) => {
+        if (isHost && hasJoined) {
+          setWaitingParticipants(prev => {
+            if (prev.some(p => p.id === payload.payload.id)) return prev;
+            return [...prev, payload.payload];
+          });
+          toast(`LINK REQUEST: ${payload.payload.name}`, {
+            description: 'New node requesting admission to the mesh.',
+            icon: <UserPlus className="w-4 h-4 text-amber-500" />
+          });
+        }
+      })
+      .on('broadcast', { event: 'join-response' }, (payload) => {
+        const { targetId, status } = payload.payload;
+        if (targetId === myRequestId) {
+          if (status === 'approved') {
+            setIsWaiting(false);
+            handleJoin();
+            toast.success('ADMISSION GRANTED', { icon: <ShieldCheck className="w-4 h-4" /> });
+          } else if (status === 'denied') {
+            setIsWaiting(false);
+            setMyRequestId(null);
+            toast.error('ADMISSION DENIED', { description: 'The host has rejected your link request.', icon: <ShieldAlert className="w-4 h-4" /> });
+          }
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [normalizedCode, isHost, hasJoined, myRequestId]);
+
+  const requestAdmission = async () => {
+    if (!displayName.trim()) return;
+    
+    if (isHost) {
+      handleJoin();
+      return;
+    }
+
+    const requestId = crypto.randomUUID();
+    setMyRequestId(requestId);
+    setIsWaiting(true);
+    
+    const channel = supabase.channel(`waiting:${normalizedCode}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'join-request',
+      payload: { id: requestId, name: displayName }
+    });
+    
+    toast.info('REQUEST BROADCAST', { description: 'Admission request sent to the mesh host.' });
+  };
+
+  const handleApprove = async (id: string) => {
+    const channel = supabase.channel(`waiting:${normalizedCode}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'join-response',
+      payload: { targetId: id, status: 'approved' }
+    });
+    setWaitingParticipants(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleDeny = async (id: string) => {
+    const channel = supabase.channel(`waiting:${normalizedCode}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'join-response',
+      payload: { targetId: id, status: 'denied' }
+    });
+    setWaitingParticipants(prev => prev.filter(p => p.id !== id));
+  };
 
   useEffect(() => {
     if (activeTab === 'chat') setUnreadCount(0);
   }, [activeTab]);
 
   const handleNewMessage = () => { if (activeTab !== 'chat') setUnreadCount(prev => prev + 1); };
+
+  const handleJoin = async () => {
+    setIsJoining(true);
+    try {
+      const roomToJoin = normalizedCode;
+      const res = await fetch('/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ room: roomToJoin, identity: displayName, isHost }),
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Server responded with ${res.status}`);
+      }
+      
+      const data = await res.json();
+      const now = new Date();
+      setJoinTime(now);
+      
+      if (data.url && !liveKitUrl) {
+        setLiveKitUrl(data.url);
+      }
+      
+      setToken(data.token || data);
+      setHasJoined(true);
+      
+      // Attendance Start
+      setAttendance(prev => [...prev, { name: displayName, joinAt: now.toLocaleTimeString(), leaveAt: 'ACTIVE' }]);
+    } catch (err: any) {
+      console.error('Join error:', err);
+      setError(err.message || 'Mesh connectivity timeout');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   // Persistent Chat Sync
   useEffect(() => {
@@ -250,24 +376,11 @@ export default function Meeting({ session: _session }: MeetingProps) {
     }
   }, [hasJoined, normalizedCode, displayName, activeTab]);
 
-  // Intent to Join Notification
   useEffect(() => {
-    if (!normalizedCode || hasJoined) return;
-    const channel = supabase.channel(`intent:${normalizedCode}`)
-      .on('broadcast', { event: 'joining' }, (payload) => {
-        toast(`${payload.payload.name} is about to enter the node`, {
-          icon: <Zap className="w-4 h-4 text-blue-400" />,
-          duration: 3000
-        });
-      }).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [normalizedCode, hasJoined]);
-
-  const broadcastJoinIntent = async () => {
-    if (!displayName.trim()) return;
-    const channel = supabase.channel(`intent:${normalizedCode}`);
-    await channel.send({ type: 'broadcast', event: 'joining', payload: { name: displayName } });
-  };
+    // Mission-critical: Resolve loading state once mesh is initialized
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handlePWAInstall = async () => {
     if (!deferredPrompt) {
@@ -282,42 +395,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
     if (outcome === 'accepted') {
       toast.success('PWA NODE INSTALLED');
       setDeferredPrompt(null);
-    }
-  };
-
-  const handleJoin = async () => {
-    setIsJoining(true);
-    try {
-      const roomToJoin = normalizedCode;
-      const res = await fetch('/api/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ room: roomToJoin, identity: displayName, isHost }),
-      });
-      
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `Server responded with ${res.status}`);
-      }
-      
-      const data = await res.json();
-      const now = new Date();
-      setJoinTime(now);
-      
-      if (data.url && !liveKitUrl) {
-        setLiveKitUrl(data.url);
-      }
-      
-      setToken(data.token || data);
-      setHasJoined(true);
-      
-      // Attendance Start
-      setAttendance(prev => [...prev, { name: displayName, joinAt: now.toLocaleTimeString(), leaveAt: 'ACTIVE' }]);
-    } catch (err: any) {
-      console.error('Join error:', err);
-      setError(err.message || 'Mesh connectivity timeout');
-    } finally {
-      setIsJoining(false);
     }
   };
 
@@ -436,28 +513,35 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   <Input 
                     placeholder="IDENTIFY NODE" 
                     value={displayName}
-                    onChange={(e) => {
-                      setDisplayName(e.target.value);
-                      broadcastJoinIntent();
-                    }}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     className="h-12 bg-black/40 border-white/5 rounded-lg text-white placeholder:text-zinc-800 text-center font-black tracking-widest focus-visible:ring-1 focus-visible:ring-white/20 text-md transition-all uppercase border-2"
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3">
-                <Button 
-                  onClick={handleJoin}
-                  disabled={isJoining || !displayName.trim()}
-                  className="w-full h-12 bg-white hover:bg-zinc-200 text-black rounded-lg font-black text-xs uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_10px_20px_rgba(255,255,255,0.05)]"
-                >
-                  {isJoining ? (
-                    <div className="flex items-center gap-3">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      SYNCING
-                    </div>
-                  ) : 'JOIN'}
-                </Button>
+                <div className="flex flex-col gap-3">
+                  <Button 
+                    onClick={requestAdmission}
+                    disabled={isJoining || isWaiting || !displayName.trim()}
+                    className="w-full h-12 bg-white hover:bg-zinc-200 text-black rounded-lg font-black text-xs uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_10px_20px_rgba(255,255,255,0.05)]"
+                  >
+                    {isJoining ? (
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        SYNCING
+                      </div>
+                    ) : isWaiting ? (
+                      <div className="flex items-center gap-3">
+                        <Zap className="w-4 h-4 animate-pulse text-blue-600" />
+                        WAITING FOR HOST...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <UserPlus className="w-4 h-4" />
+                        REQUEST ADMISSION
+                      </div>
+                    )}
+                  </Button>
 
                 <div className="flex items-center justify-center gap-2 mt-4">
                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
@@ -595,7 +679,12 @@ export default function Meeting({ session: _session }: MeetingProps) {
                   </div>
 
                   <div className="flex-1 overflow-hidden">
-                    <ParticipantsPanel isHost={isHost} />
+                    <ParticipantsPanel 
+                      isHost={isHost} 
+                      waitingParticipants={waitingParticipants}
+                      onApprove={handleApprove}
+                      onDeny={handleDeny}
+                    />
                   </div>
               </div>
             </motion.aside>
