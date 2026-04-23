@@ -25,9 +25,15 @@ import { toast } from 'sonner';
 import MetalAvatar from './MetalAvatar';
 
 export default function ParticipantsPanel({ 
-  isHost
+  isHost,
+  waitingParticipants = [],
+  onApprove,
+  onDeny
 }: { 
-  isHost: boolean
+  isHost: boolean,
+  waitingParticipants?: any[],
+  onApprove?: (id: string) => void,
+  onDeny?: (id: string) => void
 }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -126,6 +132,50 @@ export default function ParticipantsPanel({
 
       <ScrollArea className="flex-1" role="region" aria-label="Participant List">
         <div className="p-4 space-y-4">
+          {/* Waiting Room Section */}
+          {isHost && waitingParticipants.length > 0 && (
+            <div className="space-y-2 mb-6">
+              <h3 className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                <ShieldAlert className="w-3 h-3" />
+                Admission Queue ({waitingParticipants.length})
+              </h3>
+              <div className="space-y-1">
+                <AnimatePresence mode="popLayout">
+                  {waitingParticipants.map((p) => (
+                    <motion.div
+                      key={p.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="flex items-center justify-between p-2 rounded-lg bg-amber-500/5 border border-amber-500/10"
+                    >
+                      <span className="text-[10px] font-black text-white uppercase truncate max-w-[120px]">
+                        {p.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onApprove?.(p.id)}
+                          aria-label={`Approve ${p.name}`}
+                          className="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all"
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeny?.(p.id)}
+                          aria-label={`Deny ${p.name}`}
+                          className="w-6 h-6 rounded-md bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
+                        >
+                          <UserX className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Active Peers</h3>
             <AnimatePresence mode="popLayout">
