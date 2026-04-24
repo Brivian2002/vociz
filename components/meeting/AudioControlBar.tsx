@@ -167,7 +167,7 @@ export default function AudioControlBar({
       await localParticipant.setMicrophoneEnabled(targetState);
       
       toast.success(targetState ? 'Microphone On' : 'Microphone Muted', {
-        className: targetState ? 'bg-[#0a0a0f] text-emerald-400 border border-emerald-500/20' : 'bg-[#0a0a0f] text-red-400 border border-red-500/20'
+        className: targetState ? 'bg-[#00132E] text-emerald-400 border border-emerald-500/20' : 'bg-[#00132E] text-red-400 border border-red-500/20'
       });
     } catch (error: any) {
       console.error('Failed to toggle microphone:', error);
@@ -224,7 +224,7 @@ export default function AudioControlBar({
         toast.info('Hand Raised', {
           description: 'All participants notified.',
           icon: '✋',
-          className: 'bg-[#090b14] border border-blue-500/20'
+          className: 'bg-[#00132E] border border-amber-500/20 text-amber-100'
         });
       }
     } catch (e) {
@@ -348,18 +348,18 @@ export default function AudioControlBar({
             aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
             aria-pressed={!isMicrophoneEnabled}
             className={cn(
-              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden focus:ring-2 focus:ring-emerald-500 focus:outline-none",
+              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden focus:ring-2 focus:ring-blue-500 focus:outline-none",
               isMicrophoneEnabled 
-                ? "bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30" 
+                ? "bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/30" 
                 : "bg-red-600/20 border border-red-500/30 hover:bg-red-600/30"
             )}
           >
-            {isMicrophoneEnabled ? <Mic className="w-6 h-6 text-emerald-400" aria-hidden="true" /> : <MicOff className="w-6 h-6 text-red-400" aria-hidden="true" />}
+            {isMicrophoneEnabled ? <Mic className="w-6 h-6 text-blue-400" aria-hidden="true" /> : <MicOff className="w-6 h-6 text-red-400" aria-hidden="true" />}
             {isMicrophoneEnabled && !prefersReducedMotion && (
                <motion.div 
                  animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0, 0.1] }}
                  transition={{ duration: 2, repeat: Infinity }}
-                 className="absolute inset-0 bg-emerald-500 rounded-full"
+                 className="absolute inset-0 bg-blue-500 rounded-full"
                  aria-hidden="true"
                />
             )}
@@ -385,7 +385,7 @@ export default function AudioControlBar({
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#090b14] border-t border-white/10 rounded-t-[3rem] p-6 md:p-8 flex flex-col gap-6 md:gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#00132E] border-t border-white/10 rounded-t-[3rem] p-6 md:p-8 flex flex-col gap-6 md:gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
               <VisuallyHidden>
                 <Drawer.Title>More Meeting Options</Drawer.Title>
                 <Drawer.Description>Advanced controls for microphone, screen sharing, and environment settings.</Drawer.Description>
@@ -509,9 +509,9 @@ export default function AudioControlBar({
                       const quality = localParticipant.connectionQuality;
                       const strength = quality === 'excellent' ? 3 : quality === 'good' ? 2 : quality === 'poor' ? 1 : 0;
                       
-                      const color = strength === 3 ? "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]" : 
-                                    strength === 2 ? "bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,0.5)]" : 
-                                    strength === 1 ? "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]" : "bg-white/10";
+                      const color = strength === 3 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : 
+                                    strength === 2 ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" : 
+                                    strength === 1 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" : "bg-white/10";
 
                       return (
                         <div 

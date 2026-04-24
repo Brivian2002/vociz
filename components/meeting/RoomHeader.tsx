@@ -52,7 +52,7 @@ export default function RoomHeader({ roomCode, joinTime }: { roomCode: string, j
         </div>
 
         {/* Meeting Code Placeholder - Blue Black Styled */}
-        <div className="hidden sm:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#090b14] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)] transition-all hover:border-blue-700/50 group">
+        <div className="hidden sm:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#00132E] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)] transition-all hover:border-blue-700/50 group">
           <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
             <Hash className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
           </div>
@@ -64,7 +64,7 @@ export default function RoomHeader({ roomCode, joinTime }: { roomCode: string, j
 
       <div className="flex items-center gap-4">
         {/* Time Placeholder - Blue Black Styled */}
-        <div className="hidden md:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#090b14] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]">
+        <div className="hidden md:flex items-center gap-2.5 px-4 h-10 rounded-xl bg-[#00132E] border border-blue-900/30 shadow-[inset_0_0_10px_rgba(59,130,246,0.05)]">
            <div className="w-6 h-6 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
              <Clock className="w-3.5 h-3.5 text-blue-400" />
            </div>

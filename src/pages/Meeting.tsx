@@ -758,7 +758,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: 320, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
-                className="overflow-hidden bg-[#090b14]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
+                className="overflow-hidden bg-[#00132E]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
               >
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
