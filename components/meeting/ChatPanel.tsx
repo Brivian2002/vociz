@@ -18,7 +18,7 @@ import {
   Code, 
   SquareCode,
   Link,
-  Video as VideoIcon, 
+  Radio, 
   Download,
   Share,
   Loader2
@@ -57,7 +57,7 @@ export default function ChatPanel({
 }) {
   if (!roomCode) {
     return (
-       <div className="flex-1 flex items-center justify-center p-8 text-center bg-[#050508]">
+       <div className="flex-1 flex items-center justify-center p-8 text-center bg-[#000B1A]">
           <div className="space-y-4">
              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/5">
                 <Zap className="w-6 h-6 text-slate-700 animate-pulse" />
@@ -264,12 +264,12 @@ export default function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-black overflow-hidden border-white/20" role="region" aria-label="In-Call Message Hub">
-      <div className="p-3 border-b border-black flex items-center justify-between bg-white text-black shadow-sm">
+    <div className="flex flex-col h-full bg-[#000B1A] overflow-hidden border-white/20" role="region" aria-label="In-Call Message Hub">
+      <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#00132E] text-white shadow-sm">
         <div className="flex flex-col">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">IN CALL MESSAGE</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] italic">Mesh Comms Hub</h2>
           <div className="flex items-center gap-1.5 opacity-40">
-             <Zap className="w-2.5 h-2.5" />
+             <Zap className="w-2.5 h-2.5 text-blue-400" />
              <span className="text-[7px] font-black uppercase tracking-tighter italic">Secure Node Sync</span>
           </div>
         </div>
@@ -288,10 +288,10 @@ export default function ChatPanel({
               variant="ghost" 
               size="icon" 
               onClick={onClose} 
-              className="w-8 h-8 rounded-full hover:bg-black/5 text-black"
+              className="w-8 h-8 rounded-full hover:bg-white/10 text-white"
               aria-label="Close message hub"
             >
-              <X className="w-4 h-4 text-black" />
+              <X className="w-4 h-4 text-white" />
             </Button>
           )}
         </div>

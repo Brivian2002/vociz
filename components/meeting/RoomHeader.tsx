@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Video, Download, Clock, Hash } from 'lucide-react';
+import { Radio, Download, Clock, Hash, Mic } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
@@ -29,8 +29,8 @@ export default function RoomHeader({ roomCode, joinTime }: { roomCode: string, j
                  }}
                />
             </div>
-            <div className="relative z-10 w-7 h-7 bg-black rounded-lg flex items-center justify-center shadow-lg">
-              <Video className="w-4 h-4 text-white" />
+            <div className="relative z-10 w-7 h-7 bg-black rounded-lg flex items-center justify-center shadow-lg border border-white/10">
+              <Mic className="w-4 h-4 text-white" />
             </div>
             
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-pulse" />

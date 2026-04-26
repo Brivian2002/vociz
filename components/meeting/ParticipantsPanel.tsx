@@ -111,7 +111,7 @@ export default function ParticipantsPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#050508] overflow-hidden border-l border-white/5">
+    <div className="flex flex-col h-full bg-[#000B1A] overflow-hidden border-l border-white/5">
       <div className="p-6 border-b border-white/5 bg-white/[0.02]">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">

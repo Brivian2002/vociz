@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { nanoid } from 'nanoid';
 import { toast } from 'sonner';
-import { LogIn, Video, Plus, UserCircle2, AlertTriangle, Mic, Users, MessageSquare } from 'lucide-react';
+import { LogIn, Plus, UserCircle2, AlertTriangle, Mic, Users, MessageSquare, Radio } from 'lucide-react';
 import { motion } from 'motion/react';
 import { isConfigured } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -19,7 +19,7 @@ interface HomeProps {
 function StaticAppPreview() {
   return (
     <div className="absolute inset-0 z-0 overflow-hidden opacity-20 hidden lg:block pointer-events-none select-none">
-      <div className="flex h-screen w-screen p-8 gap-6 bg-[#050508]">
+      <div className="flex h-screen w-screen p-8 gap-6 bg-[#000B1A]">
         {/* Stage Content Mock */}
         <div className="flex-1 flex flex-col gap-6">
            <div className="flex-1 glass-surface rounded-[4rem] border border-white/5 p-12 flex flex-col items-center justify-center relative overflow-hidden backdrop-blur-3xl">
@@ -111,7 +111,7 @@ export default function Home({ session }: HomeProps) {
 
   if (!isConfigured) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
+      <div className="min-h-screen bg-[#000B1A] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-red-600/10 blur-[120px] pointer-events-none" />
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
@@ -172,7 +172,7 @@ export default function Home({ session }: HomeProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#050508] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-[#000B1A] text-slate-100 font-sans overflow-hidden relative flex flex-col items-center justify-center p-6">
       <StaticAppPreview />
       
       <main className="z-10 w-full max-w-sm flex flex-col gap-10" role="main">
@@ -180,9 +180,9 @@ export default function Home({ session }: HomeProps) {
           <motion.div 
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            className="w-16 h-16 rounded-[1.5rem] bg-white flex items-center justify-center mx-auto shadow-[0_20px_40px_rgba(255,255,255,0.15)]"
+            className="w-16 h-16 rounded-[1.5rem] bg-[#2563EB] flex items-center justify-center mx-auto shadow-[0_20px_40px_rgba(37,99,235,0.2)]"
           >
-            <Video className="w-8 h-8 text-black" />
+            <Radio className="w-8 h-8 text-white" />
           </motion.div>
           <div className="space-y-1">
              <h1 className="text-3xl font-black uppercase tracking-tight text-white italic">VoiceMeet</h1>
@@ -196,9 +196,12 @@ export default function Home({ session }: HomeProps) {
             <Button 
                 onClick={handleCreateMeeting} 
                 disabled={isCreating}
-                className="w-full h-14 bg-white hover:bg-zinc-200 text-black rounded-2xl font-black text-xs uppercase tracking-[0.4em] transition-all shadow-[0_10px_20px_rgba(255,255,255,0.05)] active:scale-95"
+                className="w-full h-14 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-2xl font-black text-xs uppercase tracking-[0.4em] transition-all shadow-[0_10px_20px_rgba(37,99,235,0.2)] active:scale-95 flex items-center justify-center gap-3"
               >
-                {isCreating ? 'SYNCING...' : 'INITIATE NEW MESH'}
+                {isCreating ? 'SYNCING...' : <>
+                  <Radio className="w-4 h-4 animate-pulse" />
+                  INITIATE NEW MESH
+                </>}
             </Button>
               
             <div className="relative">
