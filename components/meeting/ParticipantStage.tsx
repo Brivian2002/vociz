@@ -1,5 +1,5 @@
 import { useParticipants, useLocalParticipant } from '@livekit/components-react';
-import { Mic, MicOff, ShieldCheck, Wifi, WifiOff, Activity, Clock } from 'lucide-react';
+import { Mic, MicOff, ShieldCheck, Wifi, WifiOff, Activity, Clock, Lock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
@@ -23,13 +23,11 @@ export default function ParticipantStage({ isGridView = true }: ParticipantStage
   const getConnectionInfo = (quality: ConnectionQuality) => {
     switch (quality) {
       case ConnectionQuality.Excellent:
-        return { color: "text-emerald-500", label: "Ultra", icon: <Wifi className="w-2.5 h-2.5" />, bars: 4 };
+        return { color: "text-emerald-500", label: "OPTIMAL", bars: 4 };
       case ConnectionQuality.Good:
-        return { color: "text-blue-500", label: "Stable", icon: <Wifi className="w-2.5 h-2.5" />, bars: 3 };
-      case ConnectionQuality.Poor:
-        return { color: "text-amber-500", label: "Jitter", icon: <Activity className="w-2.5 h-2.5" />, bars: 1 };
+        return { color: "text-blue-500", label: "STABLE", bars: 3 };
       default:
-        return { color: "text-red-500", label: "Offline", icon: <WifiOff className="w-2.5 h-2.5" />, bars: 0 };
+        return { color: "text-amber-500", label: "JITTER", bars: 1 };
     }
   };
 
@@ -38,33 +36,28 @@ export default function ParticipantStage({ isGridView = true }: ParticipantStage
       <AnimatePresence mode="popLayout">
         {participants.length <= 1 ? (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-6"
+            className="flex-1 flex flex-col items-center justify-center text-center p-8 space-y-8"
           >
             <div className="relative">
-               <div className="absolute inset-0 bg-[var(--accent-plasma)]/10 blur-3xl rounded-full animate-pulse" />
-               <div className="relative glass-surface-heavy w-32 h-32 rounded-[2.5rem] flex items-center justify-center border border-white/5 shadow-3xl">
-                  <ShieldCheck className="w-16 h-16 text-[var(--accent-plasma)] opacity-60" />
+               <div className="absolute inset-0 bg-[var(--accent-primary)]/10 blur-[100px] rounded-full" />
+               <div className="relative glass-card-heavy w-40 h-40 rounded-[3rem] flex items-center justify-center border border-white/10 shadow-strong">
+                  <Lock className="w-16 h-16 text-slate-800" />
                </div>
             </div>
-            <div className="space-y-3 max-w-xs">
-               <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">Mesh Isolated</h3>
-               <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.4em] leading-relaxed">
-                  Cryptographic Bridge Active. Awaiting peer nodes to engage linkage.
+            <div className="space-y-4 max-w-sm">
+               <h3 className="text-3xl font-black text-white tracking-widest uppercase italic leading-none">Safe Mode</h3>
+               <p className="text-slate-600 text-[10px] font-black uppercase tracking-[0.5em] leading-relaxed">
+                  Cryptographic barrier active. Awaiting verified endpoints to engage transmission.
                </p>
             </div>
           </motion.div>
         ) : (
           <div className={cn(
-             "p-4 md:p-8",
+             "p-4 md:p-12",
              isGridView ? (
-               cn(
-                 "grid gap-6 md:gap-8 items-center justify-center",
-                 participants.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-6xl mx-auto" : 
-                 participants.length <= 4 ? "grid-cols-2" : 
-                 "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-               )
+                "grid gap-4 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 max-w-[1600px] mx-auto w-full"
              ) : "flex flex-col gap-4 max-w-4xl mx-auto w-full"
           )}>
             {participants.map((p) => {
@@ -74,146 +67,93 @@ export default function ParticipantStage({ isGridView = true }: ParticipantStage
               
               const metadata = JSON.parse(p.metadata || '{}');
               const displayName = metadata.name || p.identity || 'Anonymous';
-              const joinTs = metadata.joinTimestamp || Date.now();
-              const durationMins = Math.floor((now - joinTs) / 60000);
-
               const conn = getConnectionInfo(p.connectionQuality);
-
-              if (!isGridView) {
-                return (
-                  <motion.div
-                    key={p.sid}
-                    layout
-                    className={cn(
-                      "flex items-center gap-6 p-5 px-8 rounded-[2rem] border border-white/5 bg-white/[0.02] backdrop-blur-3xl transition-all",
-                      isSpeaking ? "bg-[var(--accent-plasma)]/10 border-[var(--accent-plasma)]/20 shadow-[0_0_40px_rgba(37,99,235,0.1)]" : "hover:bg-white/[0.05]",
-                      isLocal && "ring-1 ring-[var(--accent-plasma)]/30"
-                    )}
-                  >
-                    <MetalAvatar name={displayName} size={60} isSpeaking={isSpeaking} isMuted={isMuted} isHost={isLocal} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3">
-                         <h4 className="text-base font-black uppercase text-white truncate italic tracking-tighter">{displayName}</h4>
-                         {isLocal && <span className="text-[7px] font-black uppercase tracking-widest text-[var(--accent-plasma)] px-2 py-0.5 rounded bg-[var(--accent-plasma)]/10 border border-[var(--accent-plasma)]/20">MASTER</span>}
-                      </div>
-                      <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.3em] text-slate-500 mt-1">
-                         <span>NODE_ID: {p.sid.slice(0, 8)}</span>
-                         <span className="opacity-30">•</span>
-                         <Clock className="w-2.5 h-2.5" />
-                         <span>SYNC_{durationMins}M</span>
-                      </div>
-                    </div>
-                    <div className={cn("px-4 py-2 rounded-xl bg-black/40 border border-white/5 flex items-center gap-3", conn.color)}>
-                       <div className="flex flex-col items-end">
-                          <span className="text-[6px] font-black uppercase tracking-widest opacity-50">LATENCY</span>
-                          <span className="text-[10px] font-mono leading-none">{conn.label}</span>
-                       </div>
-                       <div className="flex gap-1 h-3 items-end">
-                         {[...Array(4)].map((_, i) => (
-                            <div key={i} className={cn("w-0.5 rounded-full", i < conn.bars ? "bg-current" : "bg-white/10", i === 0 ? "h-1" : i === 1 ? "h-1.5" : i === 2 ? "h-2" : "h-3")} />
-                         ))}
-                       </div>
-                    </div>
-                  </motion.div>
-                );
-              }
 
               return (
                 <motion.div
                   key={p.sid}
                   layout
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ 
                     opacity: 1, 
-                    scale: isSpeaking ? 1.02 : 1,
+                    y: 0,
+                    scale: isSpeaking ? 1.01 : 1,
                   }}
-                  exit={{ opacity: 0, scale: 0.9 }}
                   className={cn(
-                    "glass-surface-heavy rounded-[3rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[280px] md:min-h-[360px] p-10 text-center border border-white/5 shadow-2xl group/card",
-                    isSpeaking ? "border-[var(--accent-plasma)]/30 bg-[var(--accent-plasma)]/[0.03] shadow-[0_0_80px_-20px_rgba(37,99,235,0.2)]" : "hover:bg-white/[0.01]",
-                    isLocal && "ring-1 ring-[var(--accent-plasma)]/20"
+                    "glass-card rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[300px] p-8 text-center border border-white/5 shadow-strong group/card",
+                    isSpeaking ? "border-[var(--accent-success)]/30 bg-[var(--accent-success)]/[0.02]" : "hover:bg-white/[0.01]",
+                    isLocal && "ring-1 ring-white/5"
                   )}
                 >
-                  <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/10 rounded-tl-[3rem] transition-colors group-hover/card:border-[var(--accent-plasma)]/40" />
-                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/10 rounded-br-[3rem] transition-colors group-hover/card:border-[var(--accent-plasma)]/40" />
+                  {/* Decorative Industrial Corners */}
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-white/10 rounded-tl-[2.5rem] p-1">
+                     <div className="w-full h-full border-t border-l border-white/5 rounded-tl-[2rem]" />
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b border-r border-white/10 rounded-br-[2.5rem] p-1">
+                     <div className="w-full h-full border-b border-r border-white/5 rounded-br-[2rem]" />
+                  </div>
                   
+                  {/* Status Overlay */}
                   <div className="absolute top-6 inset-x-8 flex items-center justify-between">
-                     <div className="flex flex-col items-start gap-1">
-                        <span className="text-[6px] font-black text-slate-600 uppercase tracking-widest leading-none">NODE_POS</span>
-                        <span className="text-[8px] font-mono text-white/30 uppercase tracking-tighter leading-none italic">
-                           [{(Math.random() * 100).toFixed(1)}, {(Math.random() * 100).toFixed(1)}, {(Math.random() * 10).toFixed(1)}]
-                        </span>
+                     <div className="flex flex-col items-start gap-0.5">
+                        <span className="text-[7px] font-black text-slate-700 uppercase tracking-widest leading-none">ENCRYPT</span>
+                        <span className="text-[8px] font-mono text-emerald-500/40 uppercase tracking-tighter leading-none">AES_256</span>
                      </div>
                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-end">
-                           <span className="text-[6px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">STABILITY</span>
-                           <div className="flex gap-0.5 h-1.5 items-end">
-                              {[1,2,3,4].map(i => <div key={i} className={cn("w-0.5 rounded-full", i <= conn.bars ? "bg-[var(--accent-plasma)]" : "bg-white/5", i === 1 ? "h-1" : i === 2 ? "h-1.5" : "h-2")} />)}
-                           </div>
-                        </div>
                         {isMuted ? (
-                           <div className="p-2 rounded-xl bg-red-950/20 border border-red-900/30 text-red-500 shadow-lg">
+                           <div className="p-2 rounded-xl bg-red-900/10 border border-red-900/20 text-red-500">
                               <MicOff className="w-3.5 h-3.5" />
                            </div>
                         ) : (
-                           <div className={cn("p-2 rounded-xl transition-all shadow-xl", isSpeaking ? "bg-[var(--accent-plasma)] text-white scale-110" : "bg-white/5 border border-white/10 text-slate-500")}>
+                           <div className={cn("p-2 rounded-xl transition-all", isSpeaking ? "bg-[var(--accent-success)] text-white" : "bg-white/5 border border-white/10 text-slate-700")}>
                               <Mic className={cn("w-3.5 h-3.5", isSpeaking && "animate-pulse")} />
                            </div>
                         )}
                      </div>
                   </div>
 
-                  <div className="relative mb-8">
-                    {isSpeaking && (
-                       <div className="absolute inset-[-20px] rounded-full border-2 border-[var(--accent-plasma)]/20 animate-ping" />
-                    )}
+                  {/* Avatar Section */}
+                  <div className="relative mb-6">
                     <MetalAvatar 
                       name={displayName} 
-                      size={130} 
+                      size={110} 
                       isSpeaking={isSpeaking}
                       isMuted={isMuted}
                       isHost={isLocal}
                     />
+                    {isSpeaking && (
+                       <div className="absolute inset-[-10px] rounded-full border border-[var(--accent-success)]/20 animate-pulse" />
+                    )}
                   </div>
 
-                  <div className="space-y-4 z-10">
+                  {/* Information Section */}
+                  <div className="space-y-4">
                     <div className="flex flex-col items-center">
-                       <h3 className="text-xl font-black text-white italic uppercase tracking-tighter transition-colors group-hover/card:text-[var(--accent-plasma)]">
+                       <h3 className={cn(
+                         "text-lg font-black italic uppercase tracking-tighter transition-colors",
+                         isSpeaking ? "text-[var(--accent-success)]" : "text-white/90"
+                       )}>
                          {displayName}
                        </h3>
-                       <div className="flex items-center gap-2 mt-1 opacity-40">
-                          <ShieldCheck className="w-2.5 h-2.5 text-emerald-500" />
-                          <span className="text-[7px] font-mono text-white tracking-[0.2em]">VERIFIED_HASH: {p.sid.slice(0, 8).toUpperCase()}</span>
+                       <div className="flex items-center gap-2 mt-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                          <span className="text-[7px] font-mono text-slate-500 tracking-[0.2em]">VERIFIED_{p.sid.slice(0, 6).toUpperCase()}</span>
                        </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3">
-                       <div className="flex gap-1.5">
-                          {isLocal ? (
-                            <span className="text-[8px] text-[var(--accent-plasma)] font-black uppercase tracking-[0.3em] px-3 py-1 rounded-lg border border-[var(--accent-plasma)]/30 bg-[var(--accent-plasma)]/10">
-                               MASTER_NODE
-                            </span>
-                          ) : (
-                            <span className="text-[8px] text-slate-500 font-black uppercase tracking-[0.3em] px-3 py-1 rounded-lg border border-white/5 bg-white/5">
-                               PEER_LINK
-                            </span>
-                          )}
-                       </div>
-                       
-                       <div className="flex items-center gap-3 px-4 py-2 bg-black/40 rounded-xl border border-white/5">
-                          <span className="text-[7px] font-black text-slate-700 uppercase tracking-widest">FLUX:</span>
-                          <div className="flex gap-0.5 items-end h-3">
-                             {[1,4,2,6,3,8,4].map((h, i) => (
-                                <motion.div 
-                                  key={i} 
-                                  animate={{ height: isSpeaking ? [h*1.5, h*2.5, h*1.5] : h }}
-                                  transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.1 }}
-                                  className={cn("w-0.5 rounded-full", isSpeaking ? "bg-[var(--accent-plasma)]" : "bg-white/10")}
-                                  style={{ height: `${h}px` }} 
-                                />
-                             ))}
+                    <div className="flex flex-col items-center gap-3 pt-2">
+                       <div className="flex items-center gap-4 px-4 py-2 bg-black/20 rounded-2xl border border-white/5">
+                          <div className="flex flex-col items-start">
+                             <span className="text-[6px] font-black text-slate-700 uppercase tracking-widest leading-none">Stability</span>
+                             <span className={cn("text-[8px] font-mono leading-none mt-1", conn.color)}>{conn.label}</span>
                           </div>
-                          <span className="text-[7px] font-mono text-white/30 uppercase">{isSpeaking ? '44.1KB/S' : 'IDLE'}</span>
+                          <div className="w-px h-5 bg-white/5" />
+                          <div className="flex flex-col items-start pr-2">
+                             <span className="text-[6px] font-black text-slate-700 uppercase tracking-widest leading-none mb-1">Latency</span>
+                             <div className="flex gap-0.5 h-1.5 items-end">
+                                {[1,2,3,4].map(i => <div key={i} className={cn("w-0.5 rounded-full", i <= conn.bars ? "bg-blue-500" : "bg-white/5", i === 1 ? "h-1" : i === 2 ? "h-1.5" : i === 3 ? "h-2" : "h-2.5")} />)}
+                             </div>
+                          </div>
                        </div>
                     </div>
                   </div>

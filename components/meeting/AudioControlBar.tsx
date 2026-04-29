@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   Timer,
   QrCode,
+  Plus,
+  Volume2,
   Contrast,
   Smile
 } from 'lucide-react';
@@ -309,166 +311,127 @@ export default function AudioControlBar({
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>      <div className="flex items-center gap-3 md:gap-6 glass-surface-heavy px-6 md:px-10 py-5 rounded-[2.5rem] border border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] pointer-events-auto relative group">
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-40" />
+      </Dialog>      <div className="w-full max-w-lg mx-auto flex items-center justify-between glass-card-heavy px-6 py-4 rounded-full border border-white/10 shadow-[var(--shadow-strong)] pointer-events-auto relative group">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent opacity-40 rounded-full" />
         
-        {/* Toggle Chat */}
-        <button 
-          type="button"
-          onClick={() => onToggleTab?.('chat')}
-          className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:ring-[var(--accent-plasma)]/50 focus:outline-none relative group/btn",
-            activeTab === 'chat' ? "bg-[var(--accent-plasma)]/20 text-[var(--accent-plasma)] border border-[var(--accent-plasma)]/30" : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-white"
-          )}
-        >
-          <MessageSquare className="w-5 h-5" />
-          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--accent-plasma)] opacity-0 group-hover/btn:opacity-100 transition-opacity" />
-        </button>
-
-        {/* Directory Toggle */}
-        <button 
-          type="button"
-          onClick={() => onToggleTab?.('participants')}
-          className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:ring-[var(--accent-plasma)]/50 focus:outline-none relative",
-            activeTab === 'participants' ? "bg-[var(--accent-plasma)]/20 text-[var(--accent-plasma)] border border-[var(--accent-plasma)]/30" : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-white"
-          )}
-        >
-          <Users className="w-5 h-5" />
-        </button>
-
-        <div className="w-px h-10 bg-white/5 mx-2" />
-
-        {/* PUSH-TO-WHISPER Main Engine */}
-        <div className="flex items-center gap-3 px-6 py-2 bg-black/40 rounded-[2rem] border border-white/5">
-           <div className="flex flex-col items-center">
-              <span className="text-[6px] font-black uppercase text-slate-600 tracking-[0.3em] mb-1 leading-none">SIGNAL ENGINE</span>
-              <button 
-                onMouseDown={() => localParticipant.setMicrophoneEnabled(true)}
-                onMouseUp={() => localParticipant.setMicrophoneEnabled(isMicrophoneEnabled)} // Revert to toggle state
-                className={cn(
-                  "w-16 h-16 rounded-[2rem] flex items-center justify-center transition-all duration-500 relative group/mic",
-                  isMicrophoneEnabled 
-                    ? "bg-[var(--accent-plasma)] shadow-[0_0_40px_rgba(37,99,235,0.4)]" 
-                    : "bg-white/[0.03] hover:bg-white/[0.06] border border-stone-800"
-                )}
-              >
-                {isMicrophoneEnabled ? (
-                  <Mic className="w-8 h-8 text-white animate-pulse" />
-                ) : (
-                  <MicOff className="w-8 h-8 text-slate-600 group-hover/mic:text-slate-400" />
-                )}
-                
-                {isMicrophoneEnabled && (
-                  <div className="absolute inset-[-8px] rounded-[2.5rem] border-2 border-[var(--accent-plasma)] animate-ping opacity-20" />
-                )}
-              </button>
-           </div>
+        {/* Left Actions: Mute & Speaker */}
+        <div className="flex items-center gap-3">
+           <button 
+             onClick={toggleMic}
+             className={cn(
+               "w-12 h-12 rounded-full flex items-center justify-center transition-all focus:outline-none",
+               isMicrophoneEnabled 
+                 ? "bg-white/5 text-white border border-white/10" 
+                 : "bg-[var(--accent-danger)] text-white shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+             )}
+             aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
+           >
+             {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+           </button>
            
-           <div className="flex flex-col gap-1">
-              <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none">PTW_PROTOCOL</div>
-              <div className="flex items-center gap-1.5 h-6">
-                 {[1,2,3,4,5,6].map(i => (
-                    <div 
-                      key={i} 
-                      className={cn(
-                        "w-1 rounded-full transition-all duration-300",
-                        isMicrophoneEnabled ? "bg-[var(--accent-plasma)]" : "bg-white/5",
-                        isMicrophoneEnabled ? (i % 2 === 0 ? "h-4" : "h-2") : "h-1"
-                      )} 
-                    />
-                 ))}
-              </div>
-              <span className="text-[6px] font-mono text-[var(--accent-plasma)]/60 uppercase tracking-widest">{isMicrophoneEnabled ? 'LINK_ENGAGED' : 'QUIET_MODE'}</span>
-           </div>
+           <button 
+             className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 hover:text-white transition-all hidden xs:flex"
+             aria-label="Speaker Toggle"
+           >
+             <Bell className="w-5 h-5" />
+           </button>
         </div>
 
-        <div className="w-px h-10 bg-white/5 mx-2" />
-
-        {/* Oracle / Settings Toggle */}
+        {/* Center: END CALL - Large Professional Action */}
         <button 
-          onClick={() => onToggleTab?.('oracle')}
-          className={cn(
-            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:outline-none relative group",
-            activeTab === 'oracle' 
-              ? "bg-[var(--accent-quantum)]/20 text-[var(--accent-quantum)] border border-[var(--accent-quantum)]/30 shadow-[0_0_20px_rgba(244,63,94,0.2)]" 
-              : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-[var(--accent-quantum)] hover:border-[var(--accent-quantum)]/40"
-          )}
+          onClick={handleLeave}
+          className="h-14 px-8 rounded-full bg-[var(--accent-danger)] flex items-center justify-center text-white shadow-[0_10px_30px_rgba(239,68,68,0.4)] active:scale-95 transition-all group/end hover:brightness-110"
+          aria-label="Terminate Communication"
         >
-          <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          <div className={cn(
-            "absolute -top-1 -left-1 w-2 h-2 rounded-full bg-[var(--accent-quantum)] transition-opacity",
-            activeTab === 'oracle' ? "opacity-100" : "opacity-0 group-hover:opacity-40"
-          )} />
+          <LogOut className="w-6 h-6 rotate-180" />
         </button>
 
-        {/* More Actions */}
-        <Drawer.Root direction="bottom">
-          <Drawer.Trigger asChild>
-            <button className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-all">
-              <Settings2 className="w-5 h-5" />
-            </button>
-          </Drawer.Trigger>
-          {/* Drawer content keeps its existing logic but styled with Obsidian */}
-          <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
-            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[var(--bg-void)] border-t border-white/5 rounded-t-[4rem] p-10 flex flex-col gap-8 z-[100] outline-none shadow-[0_-40px_100px_rgba(0,0,0,1)]">
-              <div className="mx-auto w-16 h-1 bg-white/10 rounded-full" />
-              <div className="space-y-10 overflow-y-auto pb-12">
-                 <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                       <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Command Deck</h3>
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Adjust persistent mesh parameters</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-xl shadow-2xl">
-                       <QRCode value={window.location.href} size={48} />
-                    </div>
-                 </div>
+        {/* Right Actions: Call Tools & Tabs */}
+        <div className="flex items-center gap-3">
+           <button 
+             onClick={() => onToggleTab?.('chat')}
+             className={cn(
+               "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+               activeTab === 'chat' ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/30" : "text-slate-500 hover:text-white"
+             )}
+           >
+              <MessageSquare className="w-5 h-5" />
+           </button>
 
-                 <div className="grid grid-cols-4 gap-4">
-                    <button onClick={toggleHand} className={cn("aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 border transition-all", isHandRaised ? "bg-amber-500/20 border-amber-500/40 text-amber-500" : "bg-white/[0.02] border-white/5 text-slate-500 hover:bg-white/[0.05]")}>
-                       <Hand className="w-8 h-8" />
-                       <span className="text-[8px] font-black uppercase tracking-widest">Signal</span>
-                    </button>
-                    <button onClick={toggleScreenShare} className={cn("aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 border transition-all", isScreenSharing ? "bg-blue-500/20 border-blue-500/40 text-blue-500" : "bg-white/[0.02] border-white/5 text-slate-500 hover:bg-white/[0.05]")}>
-                       <MonitorUp className="w-8 h-8" />
-                       <span className="text-[8px] font-black uppercase tracking-widest">Cast</span>
-                    </button>
-                    <button onClick={playChime} className="aspect-square rounded-[2rem] bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center gap-3 text-slate-500 hover:text-white transition-all">
-                       <Bell className="w-8 h-8" />
-                       <span className="text-[8px] font-black uppercase tracking-widest">Alert</span>
-                    </button>
-                    <button onClick={onToggleView} className="aspect-square rounded-[2rem] bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center gap-3 text-slate-500 hover:text-white transition-all">
-                       <LayoutGrid className="w-8 h-8" />
-                       <span className="text-[8px] font-black uppercase tracking-widest">Map</span>
-                    </button>
-                 </div>
+           <Drawer.Root direction="bottom">
+             <Drawer.Trigger asChild>
+               <button className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[var(--accent-primary)] hover:brightness-125 transition-all shadow-lg active:scale-95">
+                 <Plus className="w-6 h-6" />
+               </button>
+             </Drawer.Trigger>
+             <Drawer.Portal>
+               <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+               <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[85vh] bg-[var(--bg-surface)] border-t border-white/10 rounded-t-[3rem] p-8 flex flex-col gap-8 z-[100] outline-none shadow-strong">
+                 <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full" />
+                 
+                 <div className="flex flex-col gap-8">
+                    <div className="flex items-center justify-between pb-4 border-b border-white/5">
+                       <div className="flex flex-col">
+                          <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Call Infrastructure</h3>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Manage secure endpoint services</p>
+                       </div>
+                       <div className="px-3 py-1 rounded-full bg-[var(--accent-success)]/10 border border-[var(--accent-success)]/20 text-[9px] font-black text-[var(--accent-success)] uppercase tracking-widest">Link Secured</div>
+                    </div>
 
-                 <div className="flex gap-4">
-                    <Button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        toast.success('BRIDGE_LINK_COPIED');
-                      }}
-                      variant="ghost" 
-                      className="flex-1 h-14 bg-white/[0.03] text-white/40 border border-white/5 text-[9px] font-black uppercase tracking-[0.4em] rounded-2xl"
-                    >
-                       <QrCode className="w-4 h-4 mr-3 opacity-30" />
-                       Clone Access Link
-                    </Button>
-                    <Button 
-                      onClick={handleLeave}
-                      variant="ghost" 
-                      className="flex-1 h-14 bg-red-950/20 text-red-500 border border-red-900/30 text-[9px] font-black uppercase tracking-[0.4em] rounded-2xl hover:bg-red-900/40"
-                    >
-                       <LogOut className="w-4 h-4 mr-3" />
-                       Sever Handshake
-                    </Button>
+                    {/* Tools Grid - User Focused Actions */}
+                    <div className="grid grid-cols-2 gap-4">
+                       <button className="h-20 glass-card rounded-3xl flex items-center gap-4 px-6 hover:bg-white/5 transition-all">
+                          <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                             <MessageSquare className="w-5 h-5" />
+                          </div>
+                          <div className="flex flex-col items-start translate-y-[-1px]">
+                             <span className="text-[9px] font-black text-white uppercase tracking-tight">Transcription</span>
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Live Captioning</span>
+                          </div>
+                       </button>
+
+                       <button className="h-20 glass-card rounded-3xl flex items-center gap-4 px-6 hover:bg-white/5 transition-all group">
+                          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:animate-pulse">
+                             <ShieldCheck className="w-5 h-5" />
+                          </div>
+                          <div className="flex flex-col items-start translate-y-[-1px]">
+                             <span className="text-[9px] font-black text-white uppercase tracking-tight">Line Verify</span>
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Secure Relay Link</span>
+                          </div>
+                       </button>
+
+                       <button className="h-20 glass-card rounded-3xl flex items-center gap-4 px-6 hover:bg-white/5 transition-all">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 font-bold">HD</div>
+                          <div className="flex flex-col items-start translate-y-[-1px]">
+                             <span className="text-[9px] font-black text-white uppercase tracking-tight">Studio Audio</span>
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Opus HD Codec</span>
+                          </div>
+                       </button>
+
+                       <button className="h-20 glass-card rounded-3xl flex items-center gap-4 px-6 hover:bg-white/5 transition-all">
+                          <div className="w-10 h-10 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                             <Users className="w-5 h-5" />
+                          </div>
+                          <div className="flex flex-col items-start translate-y-[-1px]">
+                             <span className="text-[9px] font-black text-white uppercase tracking-tight">Participants</span>
+                             <span className="text-[7px] font-black text-slate-500 uppercase">Manage Connections</span>
+                          </div>
+                       </button>
+                    </div>
+
+                    <div className="space-y-4 pt-4">
+                       <Button className="w-full h-14 rounded-2xl bg-white/[0.03] border border-white/10 text-[10px] font-black uppercase tracking-widest hover:bg-white/10">
+                          Transfer Handshake
+                       </Button>
+                       <div className="flex items-center justify-center gap-2">
+                          <span className="text-[8px] font-mono text-slate-700 tracking-[0.4em] uppercase">Session Hash: {Math.random().toString(16).slice(2, 10).toUpperCase()}</span>
+                       </div>
+                    </div>
                  </div>
-              </div>
-            </Drawer.Content>
-          </Drawer.Portal>
-        </Drawer.Root>
+               </Drawer.Content>
+             </Drawer.Portal>
+           </Drawer.Root>
+        </div>
       </div>
 
       {/* Satellite Telemetry Panel (Mobile Mini) */}

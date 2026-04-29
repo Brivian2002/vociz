@@ -1,21 +1,17 @@
 import { useParticipants, useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { useState, useEffect } from 'react';
 import { 
-  Hand, 
   Mic, 
   MicOff, 
-  Search, 
   Shield, 
-  Wifi, 
-  WifiOff, 
   X,
-  Target,
-  MoreVertical,
   Activity,
   ShieldAlert,
   UserMinus,
   UserCheck,
-  UserX
+  UserX,
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -37,7 +33,6 @@ export default function ParticipantsPanel({
 }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
-  const room = useRoomContext();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -57,120 +52,67 @@ export default function ParticipantsPanel({
     }
   };
 
-  const handleUnmuteParticipant = async (p: any) => {
-    if (!isHost) return;
-    try {
-      const encoder = new TextEncoder();
-      const payload = JSON.stringify({ type: 'signal', action: 'unmute-request', targetSid: p.sid });
-      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
-      toast.info(`Unmute request sent to ${p.identity}`);
-    } catch (err) {
-      toast.error('Failed to transmit request');
-    }
-  };
-
-  const handleRemoveParticipant = async (p: any) => {
-    if (!isHost) return;
-    if (!confirm(`Are you sure you want to terminate link for node ${p.identity}?`)) return;
-    
-    try {
-      const encoder = new TextEncoder();
-      const payload = JSON.stringify({ type: 'signal', action: 'remove', targetSid: p.sid });
-      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
-      toast.error(`Node ${p.identity} removal command broadcast.`);
-    } catch (err) {
-      toast.error('Failed to broadcast removal command');
-    }
-  };
-
-  const handleLowerHand = async (p: any) => {
-    if (!isHost) return;
-    try {
-      const encoder = new TextEncoder();
-      const payload = JSON.stringify({ type: 'signal', action: 'lowerHand', targetSid: p.sid });
-      await localParticipant.publishData(encoder.encode(payload), { reliable: true });
-      toast.info(`Lower hand signal sent`);
-    } catch (err) {
-      toast.error('Failed to transmit signal');
-    }
-  };
-
   const getConnectionInfo = (quality: ConnectionQuality) => {
     switch (quality) {
       case ConnectionQuality.Excellent:
-        return { label: 'OPTIMAL', color: 'text-emerald-400', icon: <Activity className="w-3 h-3" /> };
+        return { label: 'OPTIMAL', color: 'text-emerald-500' };
       case ConnectionQuality.Good:
-        return { label: 'STABLE', color: 'text-blue-400', icon: <Activity className="w-3 h-3" /> };
-      case ConnectionQuality.Poor:
-        return { label: 'DEGRADED', color: 'text-amber-400', icon: <Activity className="w-3 h-3" /> };
-      case ConnectionQuality.Lost:
-        return { label: 'OFFLINE', color: 'text-red-400', icon: <Activity className="w-3 h-3" /> };
+        return { label: 'STABLE', color: 'text-blue-500' };
       default:
-        return { label: 'STANDBY', color: 'text-slate-500', icon: <Activity className="w-3 h-3" /> };
+        return { label: 'DEGRADED', color: 'text-amber-500' };
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#000B1A] overflow-hidden border-l border-white/5">
-      <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-              <Shield className="w-4 h-4 text-blue-400" />
-              Node Directory
+    <div className="flex flex-col h-full bg-[var(--bg-surface)] overflow-hidden">
+      {/* Panel Header */}
+      <div className="p-6 border-b border-white/5 bg-black/20">
+         <div className="flex items-center justify-between mb-1">
+            <h2 className="text-[11px] font-black text-white uppercase tracking-[0.25em] flex items-center gap-2">
+               <Lock className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+               Verified Endpoints
             </h2>
-            <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-[9px] font-black text-blue-400 border border-blue-500/10">
-              {participants.length}
+            <span className="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-mono text-slate-500 border border-white/5">
+              {participants.length.toString().padStart(2, '0')}
             </span>
-          </div>
-          <button 
-            type="button"
-            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 transition-colors"
-            aria-label="Search participants"
-          >
-            <Search className="w-4 h-4" aria-hidden="true" />
-          </button>
-        </div>
-        <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Encrypted Peer Mesh</p>
+         </div>
+         <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-2 px-1">AES-256 Mesh Active</p>
       </div>
 
-      <ScrollArea className="flex-1" role="region" aria-label="Participant List" aria-live="polite">
-        <div className="p-4 space-y-4">
-          {/* Waiting Room Section */}
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-6">
+          {/* Admission Protocol */}
           {isHost && waitingParticipants.length > 0 && (
-            <div className="space-y-2 mb-6">
-              <h3 className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                <ShieldAlert className="w-3 h-3" />
-                Admission Queue ({waitingParticipants.length})
+            <div className="space-y-3">
+              <h3 className="text-[9px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2 px-2">
+                <ShieldAlert className="w-3.5 h-3.5" />
+                Admission Protocol
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <AnimatePresence mode="popLayout">
                   {waitingParticipants.map((p) => (
                     <motion.div
                       key={p.id}
                       layout
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      className="flex items-center justify-between p-2 rounded-lg bg-amber-500/5 border border-amber-500/10"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10"
                     >
-                      <span className="text-[10px] font-black text-white uppercase truncate max-w-[120px]">
+                      <span className="text-[10px] font-black text-white uppercase italic truncate max-w-[140px]">
                         {p.name}
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => onApprove?.(p.id)}
-                          aria-label={`Approve ${p.name}`}
-                          className="w-6 h-6 rounded-md bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all"
+                          className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition-all"
                         >
-                          <UserCheck className="w-3.5 h-3.5" />
+                          <UserCheck className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDeny?.(p.id)}
-                          aria-label={`Deny ${p.name}`}
-                          className="w-6 h-6 rounded-md bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
+                          className="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all"
                         >
-                          <UserX className="w-3.5 h-3.5" />
+                          <UserX className="w-4 h-4" />
                         </button>
                       </div>
                     </motion.div>
@@ -180,101 +122,78 @@ export default function ParticipantsPanel({
             </div>
           )}
 
-          <div className="space-y-2">
-            <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Active Peers</h3>
-            <AnimatePresence mode="popLayout">
-              {participants.map((p) => {
-                const isLocal = p.sid === localParticipant?.sid;
-                const metadata = JSON.parse(p.metadata || '{}');
-                const displayName = metadata.name || p.identity || 'Anonymous';
-                const isHandRaised = metadata.handRaised;
-                const isMuted = !p.isMicrophoneEnabled;
-                const isActiveSpeaker = p.isSpeaking;
-                const conn = getConnectionInfo(p.connectionQuality);
+          {/* Active Participants List */}
+          <div className="space-y-3">
+            <h3 className="text-[9px] font-black text-slate-700 uppercase tracking-widest px-2 group">
+              Active Connection Stream
+            </h3>
+            <div className="space-y-2">
+              <AnimatePresence mode="popLayout">
+                {participants.map((p) => {
+                  const isLocal = p.sid === localParticipant?.sid;
+                  const metadata = JSON.parse(p.metadata || '{}');
+                  const displayName = metadata.name || p.identity || 'Anonymous';
+                  const isMuted = !p.isMicrophoneEnabled;
+                  const isSpeaking = p.isSpeaking;
+                  const conn = getConnectionInfo(p.connectionQuality);
 
-                return (
-                  <motion.div 
-                    key={p.sid}
-                    layout
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className={cn(
-                      "flex items-center gap-4 p-4 rounded-[2rem] transition-all duration-500 group relative border",
-                      isLocal ? "bg-white/[0.04] border-white/10" : "hover:bg-white/[0.02] border-transparent hover:border-white/5",
-                      isActiveSpeaker && "border-emerald-500/30 bg-emerald-500/[0.03] shadow-[0_0_20px_rgba(16,185,129,0.1)]",
-                      isHandRaised && "border-amber-500/30 bg-amber-500/[0.03]"
-                    )}
-                  >
-                    <div className="relative z-10 shrink-0">
-                      <MetalAvatar 
-                        name={displayName} 
-                        size={52} 
-                        isSpeaking={isActiveSpeaker} 
-                        isHost={p.metadata?.includes('host')}
-                        isMuted={isMuted}
-                      />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                         <h3 className={cn(
-                           "text-[13px] font-black uppercase tracking-tight truncate",
-                           isActiveSpeaker ? "text-emerald-400" : "text-white"
-                         )}>
-                           {displayName}
-                         </h3>
-                         {isLocal && <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest border border-blue-500/20 px-2 py-0.5 rounded-full bg-blue-500/5">Local Node</span>}
+                  return (
+                    <motion.div 
+                      key={p.sid}
+                      layout
+                      className={cn(
+                        "flex items-center gap-4 p-4 rounded-3xl transition-all border group relative",
+                        isLocal ? "bg-white/[0.04] border-white/5" : "border-transparent bg-white/[0.01]",
+                        isSpeaking && "border-[var(--accent-success)]/30 bg-[var(--accent-success)]/[0.03]"
+                      )}
+                    >
+                      <div className="shrink-0 relative">
+                        <MetalAvatar 
+                          name={displayName} 
+                          size={44} 
+                          isSpeaking={isSpeaking} 
+                          isMuted={isMuted} 
+                        />
+                        {isSpeaking && (
+                          <div className="absolute inset-0 rounded-full border-2 border-[var(--accent-success)] animate-ping opacity-20" />
+                        )}
                       </div>
                       
-                      <div className="flex flex-col gap-0.5 mt-1">
-                         <div className={cn("flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest", conn.color)}>
-                           {conn.icon}
-                           <span className="opacity-80">{conn.label}</span>
-                         </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                           <h4 className={cn(
+                             "text-xs font-black uppercase tracking-tight truncate italic",
+                             isSpeaking ? "text-[var(--accent-success)]" : "text-white/80"
+                           )}>
+                             {displayName}
+                           </h4>
+                           {isLocal && <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] shadow-[0_0_5px_rgba(59,130,246,1)]" />}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                           <span className={cn("text-[7px] font-black uppercase tracking-widest", conn.color)}>{conn.label}</span>
+                           <span className="text-[7px] font-mono text-slate-800 tracking-tighter">ID: {p.sid.slice(0, 6)}</span>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 relative z-10">
-                      {/* Individual Mute/Suppress Button - Large for Mobile */}
-                      <button 
-                        onClick={() => {
-                          if (isHost && !isLocal) {
-                            if (isMuted) handleUnmuteParticipant(p);
-                            else handleMuteParticipant(p);
-                          } else {
-                            // Local-only UX feedback for non-hosts
-                            toast.info("Local suppressing not supported in mesh mode.", {
-                               description: "Only hosts can regulate mesh audio nodes."
-                            });
-                          }
-                        }}
-                        aria-label={isMuted ? "Unmute node" : "Suppress node"}
-                        className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center border transition-all active:scale-90",
-                          isMuted 
-                            ? "bg-red-500/20 border-red-500/40 text-red-500" 
-                            : "bg-emerald-500/20 border-emerald-500/40 text-emerald-500",
-                          isActiveSpeaker && "bg-emerald-500 text-white border-emerald-500 shadow-xl"
+                      <div className="flex items-center gap-2">
+                        {isHost && !isLocal && (
+                           <button 
+                             onClick={() => handleMuteParticipant(p)}
+                             className={cn(
+                               "w-9 h-9 rounded-xl flex items-center justify-center border transition-all",
+                               isMuted ? "bg-red-500/10 border-red-500/20 text-red-500" : "bg-white/5 border-white/10 text-slate-500 hover:text-white"
+                             )}
+                           >
+                             {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                           </button>
                         )}
-                      >
-                        {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className={cn("w-5 h-5", isActiveSpeaker && "animate-pulse")} />}
-                      </button>
-
-                      {isHost && !isLocal && (
-                        <button 
-                          onClick={() => handleRemoveParticipant(p)}
-                          aria-label={`Terminate node link: Remove ${displayName}`}
-                          className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90"
-                        >
-                          <UserMinus className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+                        <CheckCircle2 className={cn("w-4 h-4 transition-opacity", isLocal ? "text-[var(--accent-primary)] opacity-100" : "text-slate-800 opacity-20 group-hover:opacity-40")} />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </ScrollArea>

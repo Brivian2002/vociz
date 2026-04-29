@@ -765,152 +765,107 @@ export default function Meeting({ session: _session }: MeetingProps) {
         </AnimatePresence>
       </div>
 
-      <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
+      <RoomHeader roomCode={normalizedCode!} />
 
       <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative" role="main">
         {/* Zone 1: Participant Stage / Main Visualization */}
-        <div className="flex-1 overflow-hidden relative flex flex-col glass-surface-heavy rounded-[3rem] border border-white/5 shadow-2xl" role="region" aria-label="Main Command Center">
-           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[var(--accent-plasma)]/10 to-transparent pointer-events-none" />
-           <div className="absolute top-6 right-8 z-40">
-              <MeetingTimer />
-           </div>
+        <div className="flex-1 overflow-hidden relative flex flex-col glass-card-heavy rounded-[2.5rem] border border-white/10 shadow-[var(--shadow-strong)]" role="region" aria-label="Main Video Stage">
+           <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--accent-primary)]/5 to-transparent pointer-events-none" />
            
-           {/* Living Mesh Space Placeholder */}
            <div className="flex-1 relative flex flex-col overflow-hidden">
-              <div className="absolute top-8 left-8 z-30 flex flex-col gap-1">
-                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-[0.4em]">Mesh Topology View</span>
+              <div className="absolute top-6 left-8 z-30 flex flex-col gap-1">
                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-mono text-white/40 uppercase">Rendering 3D Graph</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-success)] animate-pulse" />
+                    <span className="text-[9px] font-black font-mono text-white/40 uppercase tracking-widest">Active Link Synchronization</span>
                  </div>
-              </div>
-              
-              <div className="absolute top-8 right-32 z-30 flex gap-2">
-                 <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setIsGridView(!isGridView)}
-                    className="h-8 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white"
-                 >
-                    {isGridView ? 'Engage 3D Mesh' : 'Grid Layout'}
-                 </Button>
               </div>
               
               <div className="flex-1 relative">
                  <AnimatePresence mode="wait">
-                    {isGridView ? (
-                       <motion.div 
-                          key="grid"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute inset-0 overflow-y-auto scrollbar-hide pb-24 md:pb-0"
-                       >
-                          <ParticipantStage isGridView={true} />
-                       </motion.div>
-                    ) : (
-                       <motion.div 
-                          key="mesh"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute inset-0"
-                       >
-                          <MeshVisualizer />
-                       </motion.div>
-                    )}
+                   {isGridView ? (
+                     <motion.div 
+                       key="grid"
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: 1 }}
+                       exit={{ opacity: 0 }}
+                       className="h-full w-full"
+                     >
+                       <ParticipantStage isGridView={true} />
+                     </motion.div>
+                   ) : (
+                     <motion.div 
+                       key="mesh"
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: 1 }}
+                       exit={{ opacity: 0 }}
+                       className="h-full w-full relative"
+                     >
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl z-10 pointer-events-none flex items-center justify-center">
+                           <div className="text-center space-y-4">
+                              <Radio className="w-12 h-12 text-[var(--accent-primary)] mx-auto animate-pulse" />
+                              <h3 className="text-sm font-black text-white/50 uppercase tracking-[0.5em]">Topology Engine Active</h3>
+                           </div>
+                        </div>
+                        <MeshVisualizer />
+                     </motion.div>
+                   )}
                  </AnimatePresence>
               </div>
            </div>
         </div>
 
+
         {/* Zone 2/3 Side Panels - Persistent Desktop Rail */}
         <div className="hidden lg:flex flex-col gap-4 w-96 relative z-20">
            {/* Zone 2: Oracle AI Mission Control (Persistent Top Pod) */}
-           <div className="h-[40%] glass-surface-heavy rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl relative group">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-30 z-20" />
-              <OraclePanel />
+           <div className="h-[35%] glass-card-heavy rounded-[2.5rem] border border-white/10 overflow-hidden shadow-strong relative group">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent opacity-30 z-20" />
+              <OraclePanel roomCode={normalizedCode!} />
            </div>
 
            {/* Zone 3: Communication Hub (Switchable Bottom Pod) */}
-           <div className="flex-1 glass-surface-heavy rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl relative flex flex-col">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-30 z-20" />
+           <div className="flex-1 glass-card-heavy rounded-[2.5rem] border border-white/10 overflow-hidden shadow-strong relative flex flex-col">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent opacity-30 z-20" />
               
-              {/* Internal Tab Rail */}
-              <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between">
-                 <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
-                    <button 
-                      onClick={() => setActiveTab('chat')}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                        activeTab === 'chat' ? "bg-[var(--accent-plasma)] text-white shadow-lg" : "text-slate-500 hover:text-white"
-                      )}
-                    >
-                       Chat
-                    </button>
-                    <button 
-                      onClick={() => setActiveTab('participants')}
-                      className={cn(
-                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                        activeTab === 'participants' ? "bg-[var(--accent-plasma)] text-white shadow-lg" : "text-slate-500 hover:text-white"
-                      )}
-                    >
-                       Peers
-                    </button>
+              <Tabs defaultValue={activeTab === 'none' ? 'chat' : activeTab} className="h-full flex flex-col">
+                 <div className="px-8 py-5 border-b border-white/5 bg-black/20">
+                    <TabsList className="bg-white/5 p-1 rounded-xl w-full h-10">
+                       <TabsTrigger 
+                         value="chat" 
+                         onClick={() => setActiveTab('chat')}
+                         className="flex-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-[var(--accent-primary)] data-[state=active]:text-white"
+                       >
+                          Mesh Chat
+                       </TabsTrigger>
+                       <TabsTrigger 
+                         value="participants" 
+                         onClick={() => setActiveTab('participants')}
+                         className="flex-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-[var(--accent-primary)] data-[state=active]:text-white"
+                       >
+                          Endpoints
+                       </TabsTrigger>
+                    </TabsList>
                  </div>
-                 <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-plasma)] animate-pulse" />
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">ACTIVE_LINK</span>
-                 </div>
-              </div>
-
-              <div className="flex-1 mt-20 overflow-hidden">
-                <AnimatePresence mode="wait">
-                   {activeTab === 'chat' ? (
-                     <motion.div 
-                        key="chat"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="h-full"
-                     >
-                        <ChatPanel 
+                 
+                 <div className="flex-1 overflow-hidden relative">
+                    <TabsContent value="chat" className="absolute inset-0 m-0">
+                       <ChatPanel 
                           roomCode={normalizedCode!} 
                           displayName={displayName} 
-                          onClose={() => setActiveTab('none')} 
                           messages={messages}
-                          setMessages={setMessages}
-                        />
-                     </motion.div>
-                   ) : activeTab === 'participants' ? (
-                     <motion.div 
-                        key="participants"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="h-full"
-                     >
-                        <ParticipantsPanel 
-                          isHost={isHost} 
-                          waitingParticipants={waitingParticipants}
-                          onApprove={handleApprove}
-                          onDeny={handleDeny}
-                          meetingCode={normalizedCode!}
-                        />
-                     </motion.div>
-                   ) : (
-                     <motion.div 
-                        key="none"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex-1 h-full flex flex-col items-center justify-center text-center p-12 opacity-20 filter grayscale"
-                     >
-                        <Radio className="w-12 h-12 mb-4" />
-                        <p className="text-[10px] font-black uppercase tracking-widest leading-loose">Select transmission channel to engage data flow</p>
-                     </motion.div>
-                   )}
-                </AnimatePresence>
-              </div>
+                          onClose={() => setActiveTab('none')}
+                       />
+                    </TabsContent>
+                    <TabsContent value="participants" className="absolute inset-0 m-0 overflow-y-auto overflow-x-hidden p-6 custom-scrollbar">
+                       <ParticipantsPanel 
+                         isHost={isHost} 
+                         waitingParticipants={waitingParticipants}
+                         onApprove={handleApprove}
+                         onDeny={handleDeny}
+                       />
+                    </TabsContent>
+                 </div>
+              </Tabs>
            </div>
         </div>
       </main>

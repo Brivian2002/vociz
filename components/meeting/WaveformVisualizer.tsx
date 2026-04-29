@@ -1,77 +1,41 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useLocalParticipant } from '@livekit/components-react';
+import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 export default function WaveformVisualizer({ 
   className 
 }: { 
   className?: string 
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { localParticipant } = useLocalParticipant();
-  const animationRef = useRef<number>(null);
+  const isSpeaking = localParticipant.isSpeaking;
+  const isMicEnabled = localParticipant.isMicrophoneEnabled;
+  const level = localParticipant.audioLevel;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const draw = () => {
-      if (!localParticipant.isMicrophoneEnabled) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        animationRef.current = requestAnimationFrame(draw);
-        return;
-      }
-
-      // LiveKit's localParticipant exposes audioLevel [0, 1]
-      const level = localParticipant.audioLevel;
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      
-      // Draw 3-4 bars that react to volume
-      const barCount = 4;
-      const spacing = 4;
-      const barWidth = 2;
-      const totalWidth = (barCount * barWidth) + ((barCount - 1) * spacing);
-      let startX = centerX - (totalWidth / 2);
-
-      ctx.fillStyle = '#10b981'; // emerald-500
-      
-      for (let i = 0; i < barCount; i++) {
-        // Vary height based on index and current level
-        const baseHeight = 4;
-        const reactiveHeight = level * 20;
-        const noise = Math.random() * 2;
-        const h = Math.max(baseHeight, reactiveHeight + (i % 2 === 0 ? noise : -noise));
-        
-        ctx.beginPath();
-        // Use roundRect or clearRect/fillRect logic
-        const y = centerY - (h / 2);
-        ctx.roundRect(startX, y, barWidth, h, 2);
-        ctx.fill();
-        
-        startX += barWidth + spacing;
-      }
-
-      animationRef.current = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [localParticipant]);
+  const bars = [0, 1, 2, 3, 4];
 
   return (
-    <canvas 
-      ref={canvasRef} 
-      width={40} 
-      height={24} 
-      className={className}
-      aria-hidden="true"
-    />
+    <div className={cn("flex items-center justify-center gap-1 h-6", className)}>
+      {bars.map((i) => (
+        <motion.div
+           key={i}
+           animate={{
+             height: isMicEnabled ? (isSpeaking ? [8, 24, 12, 20, 10][i % 5] : 4) : 2,
+             opacity: isMicEnabled ? (isSpeaking ? 1 : 0.4) : 0.1
+           }}
+           transition={{
+             duration: 0.4 + (i * 0.1),
+             repeat: Infinity,
+             repeatType: "reverse",
+             ease: "easeInOut"
+           }}
+           className={cn(
+             "w-1 rounded-full bg-[var(--accent-success)] shadow-[0_0_10px_rgba(20,184,166,0.3)]",
+             !isMicEnabled && "bg-slate-700"
+           )}
+        />
+      ))}
+    </div>
   );
 }
