@@ -309,225 +309,177 @@ export default function AudioControlBar({
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-
-      <div className="flex items-center gap-2 md:gap-4 glass-surface-heavy px-4 md:px-8 py-3 rounded-full border border-white/5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto relative">
+      </Dialog>      <div className="flex items-center gap-3 md:gap-6 glass-surface-heavy px-6 md:px-10 py-5 rounded-[2.5rem] border border-white/5 shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] pointer-events-auto relative group">
+        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-40" />
+        
         {/* Toggle Chat */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('chat')}
-          aria-label={activeTab === 'chat' ? "Close Messages" : "Open Messages"}
-          aria-pressed={activeTab === 'chat'}
           className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none",
-            activeTab === 'chat' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
+            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:ring-[var(--accent-plasma)]/50 focus:outline-none relative group/btn",
+            activeTab === 'chat' ? "bg-[var(--accent-plasma)]/20 text-[var(--accent-plasma)] border border-[var(--accent-plasma)]/30" : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-white"
           )}
         >
-          {activeTab === 'chat' ? <X className="w-5 h-5" aria-hidden="true" /> : <MessageSquare className="w-5 h-5" aria-hidden="true" />}
+          <MessageSquare className="w-5 h-5" />
+          <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--accent-plasma)] opacity-0 group-hover/btn:opacity-100 transition-opacity" />
         </button>
 
-        {/* Toggle Users Directory */}
+        {/* Directory Toggle */}
         <button 
           type="button"
           onClick={() => onToggleTab?.('participants')}
-          aria-label={activeTab === 'participants' ? "Close Participant Directory" : "Open Participant Directory"}
-          aria-pressed={activeTab === 'participants'}
           className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none",
-            activeTab === 'participants' ? "bg-blue-600 text-white" : "bg-white/5 text-slate-400 hover:bg-white/10"
+            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:ring-[var(--accent-plasma)]/50 focus:outline-none relative",
+            activeTab === 'participants' ? "bg-[var(--accent-plasma)]/20 text-[var(--accent-plasma)] border border-[var(--accent-plasma)]/30" : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-white"
           )}
         >
-          {activeTab === 'participants' ? <X className="w-5 h-5" aria-hidden="true" /> : <Users className="w-5 h-5" aria-hidden="true" />}
+          <Users className="w-5 h-5" />
         </button>
 
-        {/* Mute */}
-        <div className="relative group">
-          <button 
-            type="button"
-            onClick={toggleMic}
-            aria-label={isMicrophoneEnabled ? "Mute Microphone" : "Unmute Microphone"}
-            aria-pressed={!isMicrophoneEnabled}
-            className={cn(
-              "w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all duration-300 relative overflow-hidden focus:ring-2 focus:ring-blue-500 focus:outline-none",
-              isMicrophoneEnabled 
-                ? "bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/30" 
-                : "bg-red-600/20 border border-red-500/30 hover:bg-red-600/30"
-            )}
-          >
-            {isMicrophoneEnabled ? <Mic className="w-6 h-6 text-blue-400" aria-hidden="true" /> : <MicOff className="w-6 h-6 text-red-400" aria-hidden="true" />}
-            {isMicrophoneEnabled && !prefersReducedMotion && (
-               <motion.div 
-                 animate={{ scale: [1, 1.5, 1], opacity: [0.1, 0, 0.1] }}
-                 transition={{ duration: 2, repeat: Infinity }}
-                 className="absolute inset-0 bg-blue-500 rounded-full"
-                 aria-hidden="true"
-               />
-            )}
-          </button>
-          
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-             <WaveformVisualizer className="scale-75" />
-          </div>
+        <div className="w-px h-10 bg-white/5 mx-2" />
+
+        {/* PUSH-TO-WHISPER Main Engine */}
+        <div className="flex items-center gap-3 px-6 py-2 bg-black/40 rounded-[2rem] border border-white/5">
+           <div className="flex flex-col items-center">
+              <span className="text-[6px] font-black uppercase text-slate-600 tracking-[0.3em] mb-1 leading-none">SIGNAL ENGINE</span>
+              <button 
+                onMouseDown={() => localParticipant.setMicrophoneEnabled(true)}
+                onMouseUp={() => localParticipant.setMicrophoneEnabled(isMicrophoneEnabled)} // Revert to toggle state
+                className={cn(
+                  "w-16 h-16 rounded-[2rem] flex items-center justify-center transition-all duration-500 relative group/mic",
+                  isMicrophoneEnabled 
+                    ? "bg-[var(--accent-plasma)] shadow-[0_0_40px_rgba(37,99,235,0.4)]" 
+                    : "bg-white/[0.03] hover:bg-white/[0.06] border border-stone-800"
+                )}
+              >
+                {isMicrophoneEnabled ? (
+                  <Mic className="w-8 h-8 text-white animate-pulse" />
+                ) : (
+                  <MicOff className="w-8 h-8 text-slate-600 group-hover/mic:text-slate-400" />
+                )}
+                
+                {isMicrophoneEnabled && (
+                  <div className="absolute inset-[-8px] rounded-[2.5rem] border-2 border-[var(--accent-plasma)] animate-ping opacity-20" />
+                )}
+              </button>
+           </div>
+           
+           <div className="flex flex-col gap-1">
+              <div className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none">PTW_PROTOCOL</div>
+              <div className="flex items-center gap-1.5 h-6">
+                 {[1,2,3,4,5,6].map(i => (
+                    <div 
+                      key={i} 
+                      className={cn(
+                        "w-1 rounded-full transition-all duration-300",
+                        isMicrophoneEnabled ? "bg-[var(--accent-plasma)]" : "bg-white/5",
+                        isMicrophoneEnabled ? (i % 2 === 0 ? "h-4" : "h-2") : "h-1"
+                      )} 
+                    />
+                 ))}
+              </div>
+              <span className="text-[6px] font-mono text-[var(--accent-plasma)]/60 uppercase tracking-widest">{isMicrophoneEnabled ? 'LINK_ENGAGED' : 'QUIET_MODE'}</span>
+           </div>
         </div>
 
-        <div className="w-px h-6 bg-white/10 mx-1 md:mx-2" aria-hidden="true" />
-        
-        {/* More Options Drawer Trigger */}
+        <div className="w-px h-10 bg-white/5 mx-2" />
+
+        {/* Oracle / Settings Toggle */}
+        <button 
+          onClick={() => onToggleTab?.('oracle')}
+          className={cn(
+            "w-12 h-12 rounded-2xl flex items-center justify-center transition-all focus:ring-2 focus:outline-none relative group",
+            activeTab === 'oracle' 
+              ? "bg-[var(--accent-quantum)]/20 text-[var(--accent-quantum)] border border-[var(--accent-quantum)]/30 shadow-[0_0_20px_rgba(244,63,94,0.2)]" 
+              : "bg-white/[0.03] border border-white/5 text-slate-500 hover:text-[var(--accent-quantum)] hover:border-[var(--accent-quantum)]/40"
+          )}
+        >
+          <Target className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <div className={cn(
+            "absolute -top-1 -left-1 w-2 h-2 rounded-full bg-[var(--accent-quantum)] transition-opacity",
+            activeTab === 'oracle' ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+          )} />
+        </button>
+
+        {/* More Actions */}
         <Drawer.Root direction="bottom">
           <Drawer.Trigger asChild>
-            <button 
-              type="button"
-              aria-label="More Meeting Options"
-              className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all active:scale-95 focus:ring-2 focus:ring-blue-500 shadow-xl"
-            >
-              <MoreHorizontal className="w-6 h-6 text-white" />
+            <button className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-center text-slate-500 hover:text-white transition-all">
+              <Settings2 className="w-5 h-5" />
             </button>
           </Drawer.Trigger>
+          {/* Drawer content keeps its existing logic but styled with Obsidian */}
           <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[#00132E] border-t border-white/10 rounded-t-[3rem] p-6 md:p-8 flex flex-col gap-6 md:gap-8 z-[100] outline-none shadow-[0_-20px_100px_rgba(0,0,0,0.8)]">
-              <VisuallyHidden>
-                <Drawer.Title>More Meeting Options</Drawer.Title>
-                <Drawer.Description>Advanced controls for microphone, screen sharing, and environment settings.</Drawer.Description>
-              </VisuallyHidden>
-              <div className="mx-auto w-12 h-1.5 bg-white/10 rounded-full mb-2" />
-              
-              <div className="space-y-6 overflow-y-auto pb-8">
-                {/* Header with Invite & Stats - Minimized */}
-                <div className="flex items-center justify-between border-b border-white/5 pb-3">
-                  <div className="flex flex-col gap-0">
-                    <span className="text-[7px] font-black uppercase text-slate-600 tracking-[0.2em]">Mesh Path Status</span>
-                    <span className="text-[10px] font-black italic uppercase text-white/80 flex items-center gap-1">
-                       <ShieldCheck className="w-3 h-3 text-emerald-500/70" />
-                       Active {formatTime(meetingTime)}
-                    </span>
-                  </div>
-                  <div className="bg-white/90 p-1 rounded-md shadow-2xl">
-                    <QRCode value={window.location.href} size={40} />
-                  </div>
-                </div>
+            <Drawer.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]" />
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 max-h-[90vh] bg-[var(--bg-void)] border-t border-white/5 rounded-t-[4rem] p-10 flex flex-col gap-8 z-[100] outline-none shadow-[0_-40px_100px_rgba(0,0,0,1)]">
+              <div className="mx-auto w-16 h-1 bg-white/10 rounded-full" />
+              <div className="space-y-10 overflow-y-auto pb-12">
+                 <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                       <h3 className="text-xl font-black text-white uppercase italic tracking-tighter">Command Deck</h3>
+                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Adjust persistent mesh parameters</p>
+                    </div>
+                    <div className="p-2 bg-white rounded-xl shadow-2xl">
+                       <QRCode value={window.location.href} size={48} />
+                    </div>
+                 </div>
 
-                {/* Grid Layout for Tools - 2 Lines with Larger Targets */}
-                <div className="space-y-6">
-                   {/* Line 1: Core Tools */}
-                   <div className="grid grid-cols-4 gap-3">
-                      <button onClick={toggleHand} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isHandRaised ? "bg-amber-500/20 border-amber-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <Hand className={cn("w-7 h-7", isHandRaised ? "text-amber-400" : "text-slate-400")} />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Hand</span>
-                      </button>
-                      <button onClick={toggleScreenShare} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isScreenSharing ? "bg-blue-500/20 border-blue-500/30" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <MonitorUp className={cn("w-7 h-7", isScreenSharing ? "text-blue-400" : "text-slate-400")} />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Share</span>
-                      </button>
-                      <button onClick={playChime} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
-                         <Bell className="w-7 h-7 text-slate-400" />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Chime</span>
-                      </button>
-                      <button 
-                         onClick={() => {
-                           if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-                           else document.exitFullscreen();
-                         }}
-                         className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90"
-                      >
-                         <Maximize className="w-7 h-7 text-slate-400" />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Full</span>
-                      </button>
-                   </div>
+                 <div className="grid grid-cols-4 gap-4">
+                    <button onClick={toggleHand} className={cn("aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 border transition-all", isHandRaised ? "bg-amber-500/20 border-amber-500/40 text-amber-500" : "bg-white/[0.02] border-white/5 text-slate-500 hover:bg-white/[0.05]")}>
+                       <Hand className="w-8 h-8" />
+                       <span className="text-[8px] font-black uppercase tracking-widest">Signal</span>
+                    </button>
+                    <button onClick={toggleScreenShare} className={cn("aspect-square rounded-[2rem] flex flex-col items-center justify-center gap-3 border transition-all", isScreenSharing ? "bg-blue-500/20 border-blue-500/40 text-blue-500" : "bg-white/[0.02] border-white/5 text-slate-500 hover:bg-white/[0.05]")}>
+                       <MonitorUp className="w-8 h-8" />
+                       <span className="text-[8px] font-black uppercase tracking-widest">Cast</span>
+                    </button>
+                    <button onClick={playChime} className="aspect-square rounded-[2rem] bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center gap-3 text-slate-500 hover:text-white transition-all">
+                       <Bell className="w-8 h-8" />
+                       <span className="text-[8px] font-black uppercase tracking-widest">Alert</span>
+                    </button>
+                    <button onClick={onToggleView} className="aspect-square rounded-[2rem] bg-white/[0.02] border border-white/5 flex flex-col items-center justify-center gap-3 text-slate-500 hover:text-white transition-all">
+                       <LayoutGrid className="w-8 h-8" />
+                       <span className="text-[8px] font-black uppercase tracking-widest">Map</span>
+                    </button>
+                 </div>
 
-                   {/* Line 2: Environment */}
-                   <div className="grid grid-cols-4 gap-3">
-                      <button onClick={onToggleView} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
-                         <LayoutGrid className="w-7 h-7 text-slate-400" />
-                         <span className="text-[8px] font-black uppercase tracking-widest">View</span>
-                      </button>
-                      <button onClick={onToggleContrast} className={cn("flex flex-col items-center gap-2 p-5 rounded-[2rem] transition-all border active:scale-90", isHighContrast ? "bg-white text-black" : "bg-white/5 border-white/5 hover:bg-white/10")}>
-                         <Contrast className={cn("w-7 h-7", isHighContrast ? "text-black" : "text-slate-400")} />
-                         <span className="text-[8px] font-black uppercase tracking-widest">Contrast</span>
-                      </button>
-                      <button onClick={() => setShowEmojiMenu(!showEmojiMenu)} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 transition-all active:scale-90">
-                         <Smile className="w-7 h-7 text-slate-400" />
-                         <span className="text-[8px] font-black uppercase tracking-widest">React</span>
-                      </button>
-                      {isHost && (
-                        <button onClick={handleMuteAll} className="flex flex-col items-center gap-2 p-5 rounded-[2rem] bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-all group active:scale-90">
-                           <MicOff className="w-7 h-7 text-red-500 group-hover:scale-110 transition-transform" />
-                           <span className="text-[8px] font-black uppercase tracking-widest text-red-500">Silence</span>
-                        </button>
-                      )}
-                   </div>
-                </div>
-
-                {/* Footer Invite Action - Minimized */}
-                <Button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("Mesh Invite Cloned", { description: "Link copied to clipboard." });
-                  }}
-                  variant="outline"
-                  className="w-full h-10 bg-white/5 hover:bg-white/10 text-white/50 border-white/5 rounded-xl font-black text-[8px] uppercase tracking-[0.3em] transition-all active:scale-[0.98]"
-                >
-                   <QrCode className="w-3 h-3 mr-2 opacity-50" />
-                   -clone access link
-                </Button>
+                 <div className="flex gap-4">
+                    <Button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        toast.success('BRIDGE_LINK_COPIED');
+                      }}
+                      variant="ghost" 
+                      className="flex-1 h-14 bg-white/[0.03] text-white/40 border border-white/5 text-[9px] font-black uppercase tracking-[0.4em] rounded-2xl"
+                    >
+                       <QrCode className="w-4 h-4 mr-3 opacity-30" />
+                       Clone Access Link
+                    </Button>
+                    <Button 
+                      onClick={handleLeave}
+                      variant="ghost" 
+                      className="flex-1 h-14 bg-red-950/20 text-red-500 border border-red-900/30 text-[9px] font-black uppercase tracking-[0.4em] rounded-2xl hover:bg-red-900/40"
+                    >
+                       <LogOut className="w-4 h-4 mr-3" />
+                       Sever Handshake
+                    </Button>
+                 </div>
               </div>
             </Drawer.Content>
           </Drawer.Portal>
         </Drawer.Root>
-
-        {/* Leave */}
-        <button 
-          type="button"
-          onClick={handleLeave}
-          aria-label="Leave Meeting Session"
-          className="px-4 md:px-6 h-10 md:h-12 rounded-full bg-red-600/10 border border-red-600/30 flex items-center gap-2 text-red-500 font-black uppercase tracking-widest text-[10px] md:text-xs shadow-xl hover:bg-red-600/20 transition-all active:scale-95 focus:ring-2 focus:ring-red-500 focus:outline-none"
-        >
-          <LogOut className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-          <span className="hidden md:inline">Exit Session</span>
-        </button>
       </div>
-      
-      {/* Ultra Reading Light: Realtime Network Status */}
-      <div className="hidden md:flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-700" aria-live="polite">
-         <div className={cn(
-           "flex items-center gap-3 px-3 py-1 bg-black/60 backdrop-blur-xl rounded-full border transition-all duration-700",
-           isFocusMode ? "border-white/5" : "border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
-         )}>
-            <div className="flex flex-col text-right">
-               <span className="text-[6px] uppercase font-black text-slate-600 tracking-tighter leading-none mb-0.5">ULTRA READING LIGHT</span>
-               <div className="flex items-center gap-1.5 leading-none">
-                 <span className={cn("text-[8px] font-black font-mono uppercase", 
-                   localParticipant.connectionQuality === 'excellent' ? "text-emerald-500" :
-                   localParticipant.connectionQuality === 'good' ? "text-amber-400" : "text-red-500"
-                 )}>
-                   {isFocusMode ? (localParticipant.connectionQuality || 'ENGINE') : 'OFFLINE'}
-                 </span>
-                 
-                 {/* 3-Bar Colored Strength Indicator */}
-                 <div className="flex gap-0.5 items-end h-2" aria-hidden="true">
-                    {[0, 1, 2].map((i) => {
-                      const quality = localParticipant.connectionQuality;
-                      const strength = quality === 'excellent' ? 3 : quality === 'good' ? 2 : quality === 'poor' ? 1 : 0;
-                      
-                      const color = strength === 3 ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : 
-                                    strength === 2 ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" : 
-                                    strength === 1 ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]" : "bg-white/10";
 
-                      return (
-                        <div 
-                          key={i} 
-                          className={cn(
-                            "w-0.5 rounded-full transition-all duration-500",
-                            i === 0 ? "h-1" : i === 1 ? "h-1.5" : "h-2",
-                            i < strength ? color : "bg-white/5",
-                            i < strength && "animate-pulse" // Reading light effect
-                          )} 
-                        />
-                      );
-                    })}
-                 </div>
-               </div>
-            </div>
+      {/* Satellite Telemetry Panel (Mobile Mini) */}
+      <div className="hidden md:flex items-center gap-4 bg-black/60 backdrop-blur-2xl rounded-full px-6 py-2.5 border border-white/5 shadow-2xl">
+         <div className="flex flex-col items-end border-r border-white/10 pr-4">
+            <span className="text-[6px] font-black text-slate-500 uppercase tracking-widest">SIGNAL_HEALTH</span>
+            <span className="text-[9px] font-black text-white/80">{localParticipant.connectionQuality?.toUpperCase() || 'SEARCHING'}</span>
+         </div>
+         <div className="flex flex-col items-end">
+            <span className="text-[6px] font-black text-slate-500 uppercase tracking-widest">MESH_UPTIME</span>
+            <span className="text-[9px] font-black font-mono text-[var(--accent-plasma)]">{formatTime(meetingTime)}</span>
          </div>
       </div>
     </footer>

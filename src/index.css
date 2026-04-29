@@ -44,12 +44,15 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* User Defined Palette from Image */
-  --navy-deep: #000B1A;
-  --vibrant-blue: #2563EB;
-  --vibrant-yellow: #FBBF24;
-  --vibrant-pink: #EC4899;
-  --vibrant-red: #EF4444;
+  /* User Defined Palette: Obsidian Protocol (OKLCH) */
+  --bg-void: oklch(0.12 0.02 260);
+  --bg-strata-1: oklch(0.16 0.025 258);
+  --bg-strata-2: oklch(0.20 0.03 256);
+  --accent-plasma: oklch(0.72 0.19 240);
+  --accent-quantum: oklch(0.68 0.24 295);
+  --signal-green: oklch(0.78 0.18 155);
+  --signal-amber: oklch(0.80 0.16 75);
+  --signal-crimson: oklch(0.65 0.24 25);
 }
 
 @layer utilities {
@@ -61,15 +64,37 @@
   
   .glass-surface {
     background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px) saturate(180%) contrast(1.1);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
   
   .glass-surface-heavy {
-    background: rgba(10, 10, 15, 0.8);
-    backdrop-filter: blur(40px);
+    background: rgba(0, 11, 26, 0.85);
+    backdrop-filter: blur(48px) saturate(200%);
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
+
+  .mesh-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(37, 99, 235, 0.05),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.5; }
 }
 
 @keyframes wave {
@@ -115,34 +140,34 @@
 }
 
 .dark {
-  --background: var(--navy-deep);
-  --foreground: #F8FAFC;
-  --card: #00162E;
-  --card-foreground: #F8FAFC;
-  --popover: #00132E;
-  --popover-foreground: #F8FAFC;
-  --primary: var(--vibrant-blue);
+  --background: var(--bg-void);
+  --foreground: oklch(0.98 0.01 260);
+  --card: var(--bg-strata-1);
+  --card-foreground: oklch(0.98 0.01 260);
+  --popover: var(--bg-strata-2);
+  --popover-foreground: oklch(0.98 0.01 260);
+  --primary: var(--accent-plasma);
   --primary-foreground: #ffffff;
-  --secondary: #0F172A;
-  --secondary-foreground: #F8FAFC;
-  --muted: #0F172A;
-  --muted-foreground: #94A3B8;
-  --accent: #1E293B;
-  --accent-foreground: #F8FAFC;
-  --destructive: var(--vibrant-red);
+  --secondary: var(--bg-strata-2);
+  --secondary-foreground: oklch(0.98 0.01 260);
+  --muted: var(--bg-strata-1);
+  --muted-foreground: oklch(0.70 0.03 260);
+  --accent: var(--bg-strata-2);
+  --accent-foreground: oklch(0.98 0.01 260);
+  --destructive: var(--signal-crimson);
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: var(--vibrant-blue);
+  --border: rgba(255, 255, 255, 0.05);
+  --input: rgba(0, 0, 0, 0.2);
+  --ring: var(--accent-plasma);
   
-  --sidebar: #000B1A;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: var(--vibrant-blue);
+  --sidebar: var(--bg-void);
+  --sidebar-foreground: oklch(0.98 0.01 260);
+  --sidebar-primary: var(--accent-plasma);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #0F172A;
-  --sidebar-accent-foreground: #F8FAFC;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: var(--vibrant-blue);
+  --sidebar-accent: var(--bg-strata-1);
+  --sidebar-accent-foreground: oklch(0.98 0.01 260);
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: var(--accent-plasma);
 }
 
 @layer base {
@@ -152,9 +177,9 @@
   body {
     @apply bg-background text-foreground;
     background-image: 
-      radial-gradient(circle at 50% -20%, rgba(37, 99, 235, 0.2) 0%, transparent 80%),
-      radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.03) 0%, transparent 40%);
+      radial-gradient(circle at 50% -20%, oklch(0.4 0.15 240 / 0.15) 0%, transparent 80%),
+      radial-gradient(circle at 100% 100%, oklch(0.4 0.15 240 / 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at center, transparent 0%, oklch(0.1 0.02 260 / 0.2) 100%);
     background-attachment: fixed;
   }
   html {

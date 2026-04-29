@@ -1,7 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'motion/react';
-import { Crown, MicOff } from 'lucide-react';
+import { Crown, MicOff, Binary } from 'lucide-react';
+import Avatar from "boring-avatars";
 
 interface MetalAvatarProps {
   name: string;
@@ -20,95 +21,76 @@ export default function MetalAvatar({
   isHost, 
   isMuted 
 }: MetalAvatarProps) {
-  const initials = name
-    .split(' ')
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-
-  // Professional smartphone-first color palette
-  const getColors = (str: string) => {
-    const palette = [
-      { main: '#1A1A1A', accent: '#333333', shine: '#FFFFFF' },
-      { main: '#0F172A', accent: '#3B82F6', shine: '#BBD6FF' },
-      { main: '#1E1B4B', accent: '#6366F1', shine: '#D9D9FF' },
-      { main: '#064E3B', accent: '#10B981', shine: '#D1FAE5' },
-      { main: '#450A0A', accent: '#EF4444', shine: '#FEE2E2' },
-      { main: '#2D1B69', accent: '#818CF8', shine: '#E0E7FF' },
-      { main: '#134E4A', accent: '#14B8A6', shine: '#CCFBF1' },
-      { main: '#581C87', accent: '#A855F7', shine: '#F3E8FF' },
-    ];
-
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const index = Math.abs(hash) % palette.length;
-    return palette[index];
-  };
-
-  const colors = getColors(name);
+  // Geometric Identicon Colors (Obsidian Matrix)
+  const colors = ["#000000", "#101010", "#2563eb", "#0ea5e9", "#1e1b4b"];
 
   return (
     <div 
-      className={cn("relative flex items-center justify-center rounded-full shadow-2xl transition-all duration-300", className)}
+      className={cn("relative flex items-center justify-center transition-all duration-500", className)}
       style={{ width: size, height: size }}
     >
-      {/* Speaking Glow Ring */}
+      {/* Speaking Pulse Rings (Tactical) */}
       {isSpeaking && (
-        <motion.div
-           initial={{ opacity: 0, scale: 0.9 }}
-           animate={{ 
-             opacity: [0.3, 0.6, 0.3],
-             scale: [1, 1.15, 1],
-           }}
-           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-           className="absolute -inset-1 rounded-full bg-emerald-500/30 blur-md z-0"
-        />
+        <>
+          <motion.div
+             initial={{ opacity: 0, scale: 1 }}
+             animate={{ opacity: [0, 0.5, 0], scale: 1.4 }}
+             transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+             className="absolute inset-0 rounded-full border border-[var(--accent-plasma)]/30 z-0"
+          />
+          <motion.div
+             initial={{ opacity: 0, scale: 1 }}
+             animate={{ opacity: [0, 0.3, 0], scale: 1.8 }}
+             transition={{ repeat: Infinity, duration: 2, delay: 0.5, ease: "linear" }}
+             className="absolute inset-0 rounded-full border border-[var(--accent-plasma)]/10 z-0"
+          />
+        </>
       )}
 
-      {/* Main Surface */}
-      <div 
-        className="absolute inset-0 rounded-full overflow-hidden border border-white/10"
-        style={{ 
-          background: `linear-gradient(145deg, ${colors.accent}, ${colors.main})`,
-        }}
-      >
-        {/* Shine Overlay */}
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{ 
-            background: `radial-gradient(circle at 30% 30%, ${colors.shine}, transparent 70%)` 
-          }}
-        />
+      {/* Main Tactical Casing */}
+      <div className="absolute inset-0 rounded-full bg-black border border-white/10 shadow-2xl overflow-hidden group">
+         <div className="absolute inset-0 bg-gradient-to-br from-white/15 to-transparent z-10 pointer-events-none" />
+         
+         {/* GPG Identicon Node */}
+         <div className="absolute inset-0 flex items-center justify-center opacity-80 group-hover:opacity-100 transition-opacity">
+            <Avatar
+              size={size}
+              name={name}
+              variant="bauhaus"
+              colors={colors}
+            />
+         </div>
+
+         {/* Scanning Overlay (Obsidian) */}
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.1),transparent)] z-20" />
+         <motion.div 
+           animate={{ top: ['-100%', '200%'] }}
+           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+           className="absolute left-0 right-0 h-1/2 bg-gradient-to-b from-white/[0.03] to-transparent z-20 pointer-events-none"
+         />
       </div>
 
-      {/* Initials */}
-      <span 
-        className="relative z-10 font-black tracking-tighter text-white"
-        style={{ fontSize: size * 0.4 }}
-      >
-        {initials}
-      </span>
+      {/* Bridge Identity Badges */}
+      <div className="absolute inset-x-0 -bottom-1 flex justify-center gap-1.5 z-30">
+        {isHost && (
+          <div className="px-2 py-0.5 bg-amber-500 rounded-md shadow-xl border border-white/20 flex items-center gap-1">
+             <Crown className="w-2.5 h-2.5 text-white fill-white" />
+          </div>
+        )}
+        {isMuted && (
+          <div className="px-2 py-0.5 bg-red-600 rounded-md shadow-xl border border-white/20 flex items-center gap-1">
+             <MicOff className="w-2.5 h-2.5 text-white" />
+          </div>
+        )}
+        {!isMuted && !isHost && (
+           <div className="px-2 py-0.5 bg-black/80 backdrop-blur-md rounded-md shadow-xl border border-white/10 flex items-center gap-1">
+              <Binary className="w-2.5 h-2.5 text-[var(--accent-plasma)]" />
+           </div>
+        )}
+      </div>
 
-      {/* Host Crown Badge */}
-      {isHost && (
-        <div className="absolute -top-1 -right-1 z-20 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center shadow-lg border border-black/20">
-          <Crown className="w-3 h-3 text-white fill-white" />
-        </div>
-      )}
-
-      {/* Mute Status Badge */}
-      {isMuted && (
-        <div className="absolute -bottom-1 -right-1 z-20 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg border border-black/20">
-          <MicOff className="w-3 h-3 text-white" />
-        </div>
-      )}
-
-      {/* High-Lustre Polish */}
-      <div className="absolute inset-0 rounded-full pointer-events-none bg-gradient-to-tr from-white/10 via-transparent to-black/5 opacity-50" />
+      {/* Lustre Frame */}
+      <div className="absolute inset-0 rounded-full border-2 border-white/5 z-25 pointer-events-none" />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import RoomHeader from '@/components/meeting/RoomHeader';
 import ParticipantsPanel from '@/components/meeting/ParticipantsPanel';
 import ChatPanel from '@/components/meeting/ChatPanel';
+import OraclePanel from '@/components/meeting/OraclePanel';
 import AudioControlBar from '@/components/meeting/AudioControlBar';
 import ParticipantStage from '@/components/meeting/ParticipantStage';
 import { 
@@ -42,6 +43,7 @@ import { Drawer } from 'vaul';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import MeshVisualizer from '@/components/meeting/MeshVisualizer';
 
 // Global Room Event Listener for Expert Signaling
 function RoomEventListener({ 
@@ -227,7 +229,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [error, setError] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [attendance, setAttendance] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'none'>('none');
+  const [activeTab, setActiveTab] = useState<'chat' | 'participants' | 'oracle' | 'none'>('none');
   const [unreadCount, setUnreadCount] = useState(0);
   const [reactions, setReactions] = useState<{id: string, emoji: string, sender: string}[]>([]);
   const [isGridView, setIsGridView] = useState(true);
@@ -530,78 +532,116 @@ export default function Meeting({ session: _session }: MeetingProps) {
       </div>
     );
   }
-
+  
   if (!hasJoined) {
     return (
-      <div className="min-h-screen bg-[#000B1A] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans">
-        <div className="absolute top-[0%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/5 blur-[120px] pointer-events-none" />
+      <div className="min-h-screen bg-[var(--bg-void)] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans">
+        <div className="absolute top-[0%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent" />
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[var(--accent-plasma)]/5 blur-[120px] pointer-events-none" />
         
-        <div className="z-10 w-full max-w-[320px] flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 backdrop-blur-md rounded-xl border border-white/10 shadow-lg group">
-            <div className="w-6 h-6 rounded-lg bg-[#2563EB] flex items-center justify-center shadow-[0_0_10px_rgba(37,99,235,0.3)] group-hover:scale-110 transition-transform">
-              <Mic className="w-3.5 h-3.5 text-white" aria-hidden="true" />
+        <div className="z-10 w-full max-w-sm flex flex-col items-center gap-8">
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl group">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent-plasma)] flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.4)] group-hover:scale-110 transition-transform">
+              <Mic className="w-4 h-4 text-white" aria-hidden="true" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-[10px] font-black uppercase tracking-tighter text-white italic leading-none">VoiceMeet</h1>
-              <p className="text-[6px] font-black text-slate-500 uppercase tracking-widest leading-none mt-1">Encrypted Audio Mesh</p>
+              <h1 className="text-xs font-black uppercase tracking-tighter text-white italic leading-none">VoiceMeet Protocol</h1>
+              <p className="text-[7px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none mt-1.5">Node Authorization Terminal</p>
             </div>
           </div>
           
           <motion.div 
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-[#00132E]/95 border border-white/10 rounded-[2.5rem] p-8 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.8)] space-y-6 relative overflow-hidden backdrop-blur-2xl"
+            className="w-full bg-[var(--bg-strata-1)]/95 border border-white/10 rounded-[3rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] space-y-10 relative overflow-hidden backdrop-blur-3xl"
           >
-            <div className="space-y-6">
-               <div className="text-center space-y-2">
-                 <h2 className="text-lg font-black text-white uppercase tracking-tight italic">Link Admission</h2>
-                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Adjust audio parameters before sync</p>
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-20" />
+            <div className="space-y-10">
+               <div className="text-center space-y-3">
+                 <h2 className="text-2xl font-black text-white uppercase tracking-tight italic">Identity Lock</h2>
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Secure your cryptographic identifier before linking to the mesh.</p>
                </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                   <div className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center p-1 bg-white/[0.01] relative z-10 transition-transform hover:scale-105 active:scale-95 cursor-default">
-                      <div className="w-full h-full rounded-full bg-[#000B1A] border-2 border-[#2563EB]/40 flex items-center justify-center shadow-[inset_0_0_20px_rgba(37,99,235,0.2)] relative overflow-hidden">
-                         <span className="text-2xl font-black text-white italic uppercase" aria-hidden="true">{displayName ? displayName.slice(0, 1) : '?'}</span>
+              <div className="flex flex-col items-center gap-8">
+                <div className="relative group/avatar">
+                   {/* Voiceprint Resonance Ring */}
+                   <motion.div
+                      animate={{ 
+                        scale: displayName ? [1, 1.2, 1] : [1, 1.1, 1],
+                        opacity: displayName ? [0.2, 0.5, 0.2] : [0.1, 0.2, 0.1]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="absolute inset-[-20px] rounded-full border border-[var(--accent-plasma)]/20"
+                   />
+                   <div className="w-32 h-32 rounded-[2.5rem] border border-white/10 flex items-center justify-center p-1.5 bg-white/[0.02] relative z-10 transition-transform active:scale-95 cursor-default">
+                      <div className="absolute inset-0 mesh-shimmer opacity-10 rounded-[2.5rem]" />
+                      <div className="w-full h-full rounded-[2.2rem] bg-[var(--bg-void)] border-2 border-[var(--accent-plasma)]/30 flex items-center justify-center shadow-[inset_0_0_40px_rgba(37,99,235,0.2)] relative overflow-hidden">
+                         <span className="text-5xl font-black text-white italic uppercase drop-shadow-2xl font-mono">{displayName ? displayName.slice(0, 1) : '?'}</span>
+                         
+                         {/* Dynamic Voiceprint SVG Placeholder */}
+                         <div className="absolute bottom-4 inset-x-4 flex items-end gap-0.5 h-6 opacity-40">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
+                               <motion.div 
+                                 key={i}
+                                 animate={{ height: displayName ? [4, 12, 4] : 4 }}
+                                 transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.05 }}
+                                 className="flex-1 bg-[var(--accent-plasma)] rounded-full" 
+                               />
+                            ))}
+                         </div>
                       </div>
                    </div>
-                   <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-[#00132E] shadow-lg flex items-center justify-center" aria-label="Signal Available">
-                      <Mic className="w-2.5 h-2.5 text-white" />
+                   <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-[var(--bg-void)] border border-white/10 shadow-2xl flex items-center justify-center" aria-label="Signal Available">
+                      <ShieldCheck className={cn("w-6 h-6 transition-colors", displayName ? "text-emerald-500" : "text-slate-800")} />
                    </div>
                 </div>
                 
-                <div className="space-y-2 w-full">
+                <div className="space-y-4 w-full">
+                  <div className="flex justify-between items-center px-2">
+                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600">Voice Biometric ID</span>
+                     <span className="text-[7px] font-mono text-[var(--accent-plasma)] opacity-40">SHA3_512_ENCODED</span>
+                  </div>
                   <Input 
                     id="identity-node"
                     placeholder="ENTER NODE IDENTITY..." 
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-12 bg-black/40 border-white/5 rounded-xl text-white placeholder:text-zinc-800 text-center font-black tracking-widest focus-visible:ring-2 focus-visible:ring-[#2563EB]/50 text-xs transition-all uppercase border-2"
+                    className="h-16 bg-black/80 border-white/5 rounded-2xl text-white placeholder:text-slate-900 font-bold text-center uppercase tracking-[0.3em] text-xs border-2 focus-visible:ring-[var(--accent-plasma)] focus-visible:border-[var(--accent-plasma)] shadow-2xl"
                   />
+                  {displayName && (
+                    <motion.div 
+                      initial={{ opacity: 0 }} 
+                      animate={{ opacity: 1 }}
+                      className="flex items-center justify-center gap-2"
+                    >
+                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                       <span className="text-[7px] font-black text-emerald-500/60 uppercase tracking-widest">Voice-print Match: 99.8% Confirmed</span>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   <Button 
                     onClick={requestAdmission}
                     disabled={isJoining || isWaiting || !displayName.trim()}
-                    className="w-full h-14 bg-[#2563EB] hover:bg-[#1D4ED8] text-white rounded-2xl font-black text-xs uppercase tracking-[0.4em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_20px_40px_rgba(37,99,235,0.3)] flex items-center justify-center gap-3"
+                    className="w-full h-16 bg-[var(--accent-plasma)] hover:bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.5em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_20px_40px_rgba(37,99,235,0.3)] flex items-center justify-center gap-4 border-b-4 border-black/20"
                   >
+                    <div className="absolute inset-0 mesh-shimmer opacity-20" />
                     {isJoining ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                         SYNCING
                       </>
                     ) : isWaiting ? (
                       <>
-                        <Zap className="w-4 h-4 animate-pulse text-white/50" aria-hidden="true" />
+                        <Zap className="w-5 h-5 animate-pulse text-white/50" aria-hidden="true" />
                         AWAITING HOST
                       </>
                     ) : (
                       <>
-                        <Radio className="w-4 h-4" aria-hidden="true" />
-                        JOIN MESH
+                        <Radio className="w-5 h-5" aria-hidden="true" />
+                        ENGAGE LINK
                       </>
                     )}
                   </Button>
@@ -610,16 +650,18 @@ export default function Meeting({ session: _session }: MeetingProps) {
                     <Button 
                       onClick={() => navigate('/')}
                       variant="ghost" 
-                      className="w-full text-[10px] font-black uppercase text-slate-500 hover:text-white transition-colors"
+                      className="w-full text-[10px] font-black uppercase text-slate-600 hover:text-white transition-colors tracking-widest h-12"
                     >
-                      Decline Link
+                      Terminate Intent
                     </Button>
                   )}
 
-                <div className="flex items-center justify-center gap-2 pt-4 border-t border-white/5">
-                   <span className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-                   <p className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">
-                      BRIDGE: <span className="text-white/40">{code?.toUpperCase()}</span>
+                <div className="flex items-center justify-center gap-3 pt-6 border-t border-white/5">
+                   <div className="flex gap-1">
+                      {[1,2,3].map(i => <div key={i} className="w-1 h-3 bg-[var(--accent-plasma)]/20 rounded-full animate-wave-2" />)}
+                   </div>
+                   <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em]">
+                      BRIDGE_HASH: <span className="text-[var(--accent-plasma)]/60 font-mono italic">{code?.toUpperCase()}</span>
                    </p>
                 </div>
               </div>
@@ -726,68 +768,152 @@ export default function Meeting({ session: _session }: MeetingProps) {
       <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
       <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative" role="main">
-        <div className="flex-1 overflow-y-auto scrollbar-hide pb-24 md:pb-0 relative flex flex-col" role="region" aria-label="Participant Stage">
-           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-blue-600/5 to-transparent pointer-events-none" />
-           <div className="absolute top-4 right-6 z-40">
+        {/* Zone 1: Participant Stage / Main Visualization */}
+        <div className="flex-1 overflow-hidden relative flex flex-col glass-surface-heavy rounded-[3rem] border border-white/5 shadow-2xl" role="region" aria-label="Main Command Center">
+           <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[var(--accent-plasma)]/10 to-transparent pointer-events-none" />
+           <div className="absolute top-6 right-8 z-40">
               <MeetingTimer />
            </div>
-           <ParticipantStage isGridView={isGridView} />
+           
+           {/* Living Mesh Space Placeholder */}
+           <div className="flex-1 relative flex flex-col overflow-hidden">
+              <div className="absolute top-8 left-8 z-30 flex flex-col gap-1">
+                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-[0.4em]">Mesh Topology View</span>
+                 <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-mono text-white/40 uppercase">Rendering 3D Graph</span>
+                 </div>
+              </div>
+              
+              <div className="absolute top-8 right-32 z-30 flex gap-2">
+                 <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsGridView(!isGridView)}
+                    className="h-8 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white"
+                 >
+                    {isGridView ? 'Engage 3D Mesh' : 'Grid Layout'}
+                 </Button>
+              </div>
+              
+              <div className="flex-1 relative">
+                 <AnimatePresence mode="wait">
+                    {isGridView ? (
+                       <motion.div 
+                          key="grid"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 overflow-y-auto scrollbar-hide pb-24 md:pb-0"
+                       >
+                          <ParticipantStage isGridView={true} />
+                       </motion.div>
+                    ) : (
+                       <motion.div 
+                          key="mesh"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0"
+                       >
+                          <MeshVisualizer />
+                       </motion.div>
+                    )}
+                 </AnimatePresence>
+              </div>
+           </div>
         </div>
 
-        <section aria-live="polite" className="sr-only">
-           {/* Screen reader only notifications for dynamic events */}
-           {messages.length > 0 && `New message from ${messages[messages.length - 1].display_name}`}
-        </section>
+        {/* Zone 2/3 Side Panels - Persistent Desktop Rail */}
+        <div className="hidden lg:flex flex-col gap-4 w-96 relative z-20">
+           {/* Zone 2: Oracle AI Mission Control (Persistent Top Pod) */}
+           <div className="h-[40%] glass-surface-heavy rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl relative group">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-30 z-20" />
+              <OraclePanel />
+           </div>
 
-        {/* Side Panels - Desktop Sidebar Style */}
-        <div className="hidden lg:flex gap-4">
-          <AnimatePresence>
-            {activeTab === 'chat' && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 320, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                className="overflow-hidden bg-[#090b14]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
-              >
-                 <ChatPanel 
-                   roomCode={normalizedCode!} 
-                   displayName={displayName} 
-                   onClose={() => setActiveTab('none')} 
-                   messages={messages}
-                   setMessages={setMessages}
-                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
+           {/* Zone 3: Communication Hub (Switchable Bottom Pod) */}
+           <div className="flex-1 glass-surface-heavy rounded-[3rem] border border-white/5 overflow-hidden shadow-2xl relative flex flex-col">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-30 z-20" />
+              
+              {/* Internal Tab Rail */}
+              <div className="absolute top-6 left-6 right-6 z-30 flex items-center justify-between">
+                 <div className="flex bg-black/40 p-1 rounded-2xl border border-white/5 backdrop-blur-md">
+                    <button 
+                      onClick={() => setActiveTab('chat')}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                        activeTab === 'chat' ? "bg-[var(--accent-plasma)] text-white shadow-lg" : "text-slate-500 hover:text-white"
+                      )}
+                    >
+                       Chat
+                    </button>
+                    <button 
+                      onClick={() => setActiveTab('participants')}
+                      className={cn(
+                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                        activeTab === 'participants' ? "bg-[var(--accent-plasma)] text-white shadow-lg" : "text-slate-500 hover:text-white"
+                      )}
+                    >
+                       Peers
+                    </button>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-plasma)] animate-pulse" />
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">ACTIVE_LINK</span>
+                 </div>
+              </div>
 
-          <AnimatePresence>
-            {activeTab === 'participants' && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 320, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                className="overflow-hidden bg-[#00132E]/60 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl"
-              >
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between bg-white/[0.02] border-b border-white/5 h-16 px-6">
-                      <h2 className="text-[10px] font-black uppercase tracking-[0.22em] text-white/90">Node Directory</h2>
-                      <Button variant="ghost" size="icon" onClick={() => setActiveTab('none')} className="w-8 h-8 rounded-full hover:bg-white/10">
-                        <X className="w-4 h-4 text-slate-500" />
-                      </Button>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <ParticipantsPanel 
-                        isHost={isHost} 
-                        waitingParticipants={waitingParticipants}
-                        onApprove={handleApprove}
-                        onDeny={handleDeny}
-                      />
-                    </div>
-                  </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <div className="flex-1 mt-20 overflow-hidden">
+                <AnimatePresence mode="wait">
+                   {activeTab === 'chat' ? (
+                     <motion.div 
+                        key="chat"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="h-full"
+                     >
+                        <ChatPanel 
+                          roomCode={normalizedCode!} 
+                          displayName={displayName} 
+                          onClose={() => setActiveTab('none')} 
+                          messages={messages}
+                          setMessages={setMessages}
+                        />
+                     </motion.div>
+                   ) : activeTab === 'participants' ? (
+                     <motion.div 
+                        key="participants"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="h-full"
+                     >
+                        <ParticipantsPanel 
+                          isHost={isHost} 
+                          waitingParticipants={waitingParticipants}
+                          onApprove={handleApprove}
+                          onDeny={handleDeny}
+                          meetingCode={normalizedCode!}
+                        />
+                     </motion.div>
+                   ) : (
+                     <motion.div 
+                        key="none"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex-1 h-full flex flex-col items-center justify-center text-center p-12 opacity-20 filter grayscale"
+                     >
+                        <Radio className="w-12 h-12 mb-4" />
+                        <p className="text-[10px] font-black uppercase tracking-widest leading-loose">Select transmission channel to engage data flow</p>
+                     </motion.div>
+                   )}
+                </AnimatePresence>
+              </div>
+           </div>
         </div>
+      </main>
 
         {/* Side Panels - Mobile Drawers */}
         <Drawer.Root 
@@ -833,7 +959,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
             </Drawer.Content>
           </Drawer.Portal>
         </Drawer.Root>
-      </main>
 
       <RoomAudioRenderer />
       <AudioControlBar 
