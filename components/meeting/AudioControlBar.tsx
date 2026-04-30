@@ -166,10 +166,13 @@ export default function AudioControlBar({
         </DialogContent>
       </Dialog>
 
-      <div className={cn("flex items-center justify-between w-full lg:w-auto overflow-hidden", isMobile && "flex-1")}>
+      <div className={cn(
+        "flex items-center w-full overflow-x-auto scrollbar-hide flex-nowrap gap-2 md:gap-0",
+        isMobile ? "px-2" : "justify-between"
+      )}>
         {/* Left: System Features Left-Aligned */}
-        <div className={cn("flex items-center gap-2 md:gap-6", isMobile ? "min-w-[120px]" : "min-w-[180px]")}>
-          <div className="flex flex-col items-start">
+        <div className={cn("flex flex-shrink-0 items-center gap-2 md:gap-6", isMobile ? "min-w-[100px]" : "min-w-[180px]")}>
+          <div className="flex flex-col items-start px-1">
             <div className="flex items-center gap-1.5 md:gap-2">
               <span className={cn(
                 "font-mono tracking-tighter uppercase whitespace-nowrap opacity-80 decoration-dotted underline underline-offset-4 text-[var(--accent-primary)]",
@@ -200,12 +203,12 @@ export default function AudioControlBar({
         </div>
 
         {/* Center: Main Controls */}
-        <div className={cn("flex items-center gap-1 md:gap-3 flex-1 justify-center", isMobile && "px-1")}>
+        <div className={cn("flex items-center gap-1 md:gap-3 flex-shrink-0 justify-center", isMobile ? "px-1" : "flex-1")}>
           <div className="flex items-center gap-1 md:gap-2">
             <button 
               onClick={toggleMic}
               className={cn(
-                "rounded-full flex items-center justify-center transition-all",
+                "rounded-full flex items-center justify-center transition-all flex-shrink-0",
                 isMobile ? "w-8 h-8" : "w-10 h-10 md:w-11 md:h-11",
                 isMicrophoneEnabled ? "bg-[#1E1E1E] text-white hover:bg-white/10" : "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
               )}
@@ -215,7 +218,7 @@ export default function AudioControlBar({
             <button 
               onClick={toggleCamera}
               className={cn(
-                "rounded-full flex items-center justify-center transition-all",
+                "rounded-full flex items-center justify-center transition-all flex-shrink-0",
                 isMobile ? "w-8 h-8" : "w-10 h-10 md:w-11 md:h-11",
                 isCameraEnabled ? "bg-[#1E1E1E] text-white hover:bg-white/10" : "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
               )}
@@ -224,14 +227,14 @@ export default function AudioControlBar({
             </button>
           </div>
 
-          <div className={cn("w-px bg-white/10", isMobile ? "h-4 mx-0.5" : "h-6 mx-1")} />
+          <div className={cn("w-px bg-white/10 flex-shrink-0", isMobile ? "h-4 mx-0.5" : "h-6 mx-1")} />
 
           <div className="flex items-center gap-1 md:gap-2">
-             <button className="w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all hidden md:flex">
+             <button className="w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all hidden md:flex flex-shrink-0">
                <Volume2 className="w-5 h-5" />
              </button>
              
-             <div className={cn("relative", isMobile && "hidden")}>
+             <div className={cn("relative flex-shrink-0", isMobile && "hidden")}>
                <button 
                  onClick={() => setShowEmojiMenu(!showEmojiMenu)}
                  className={cn("w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all", showEmojiMenu && "bg-white/10 text-white")}
@@ -267,7 +270,7 @@ export default function AudioControlBar({
              <button 
                onClick={toggleHand}
                className={cn(
-                 "rounded-full flex items-center justify-center transition-all",
+                 "rounded-full flex items-center justify-center transition-all flex-shrink-0",
                  isMobile ? "w-8 h-8" : "w-10 h-10",
                  isHandRaised && "text-amber-400 bg-amber-400/10",
                  !isHandRaised && "bg-[#1E1E1E] text-white hover:bg-white/10"
@@ -279,7 +282,7 @@ export default function AudioControlBar({
              <Drawer.Root direction="bottom">
                <Drawer.Trigger asChild>
                  <button className={cn(
-                   "rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all",
+                   "rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all flex-shrink-0",
                    isMobile ? "w-8 h-8" : "w-10 h-10"
                  )}>
                    <MoreHorizontal className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
@@ -315,14 +318,14 @@ export default function AudioControlBar({
 
           <button 
             onClick={onLeave}
-            className={cn("ml-1 md:ml-2 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-lg active:scale-95", isMobile ? "w-8 h-8" : "h-10 px-6")}
+            className={cn("ml-1 md:ml-2 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-lg active:scale-95 flex-shrink-0", isMobile ? "w-8 h-8" : "h-10 px-6")}
           >
             <LogOut className={cn(isMobile ? "w-4 h-4" : "w-5 h-5", "rotate-180")} />
           </button>
         </div>
 
         {/* Right: Info, People, Chat */}
-        <div className={cn("flex items-center gap-1 md:gap-2 justify-end", isMobile ? "min-w-[80px]" : "min-w-[200px]")}>
+        <div className={cn("flex items-center gap-1 md:gap-2 justify-end flex-shrink-0", isMobile ? "min-w-[80px]" : "min-w-[200px]")}>
           <button 
              onClick={() => onToggleTab?.('oracle')}
              className={cn(
