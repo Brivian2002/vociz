@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { LiveKitRoom, RoomAudioRenderer, useLocalParticipant, useRoomContext, useParticipants } from '@livekit/components-react';
 import { supabase, isConfigured } from '@/lib/supabase';
@@ -44,7 +44,10 @@ import { Drawer } from 'vaul';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import MeshVisualizer from '@/components/meeting/MeshVisualizer';
+import { isWebGLAvailable } from '../lib/webgl';
+
+// Lazy load MeshVisualizer to avoid loading 3D assets when not needed
+const LazyMeshVisualizer = lazy(() => import('@/components/meeting/MeshVisualizer'));
 
 import { useLocalStorage } from '../hooks/use-local-storage';
 
@@ -238,6 +241,11 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [isGridView, setIsGridView] = useState(true);
   const [viewMode, setViewMode] = useLocalStorage<'desktop' | 'mobile'>('voicemeet_view_mode', 'desktop');
   const [isHighContrast, setIsHighContrast] = useState(false);
+  const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setWebglSupported(isWebGLAvailable());
+  }, []);
   const [preJoinNotif, setPreJoinNotif] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [showGuide, setShowGuide] = useState(() => !localStorage.getItem('voicemeet_guided'));
@@ -777,7 +785,19 @@ export default function Meeting({ session: _session }: MeetingProps) {
                                <h3 className="text-sm font-black text-white/50 uppercase tracking-[0.5em]">Topology Engine Active</h3>
                             </div>
                          </div>
-                         <MeshVisualizer />
+                         {webglSupported ? (
+                           <Suspense fallback={<div className="absolute inset-0 bg-[#050508]" />}>
+                             <LazyMeshVisualizer />
+                           </Suspense>
+                         ) : (
+                           <div className="absolute inset-0 z-0 bg-[#050508] overflow-hidden">
+                             <div className="absolute inset-0 opacity-20 pointer-events-none" 
+                                  style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #3b82f6 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                               <div className="w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)] animate-pulse" />
+                             </div>
+                           </div>
+                         )}
                       </motion.div>
                     )}
                   </AnimatePresence>

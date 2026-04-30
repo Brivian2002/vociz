@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Radio, Download, ShieldCheck, X, Link as LinkIcon, Copy, Check, Smartphone, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface RoomHeaderProps {
   roomCode: string;
