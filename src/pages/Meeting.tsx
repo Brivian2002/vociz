@@ -30,8 +30,9 @@ import {
   Bell,
   MicOff,
   UserPlus,
-  Target,
-  Mic
+  Target, 
+  Mic,
+  Video
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -408,6 +409,15 @@ export default function Meeting({ session: _session }: MeetingProps) {
     }
   };
 
+  const handleLeave = () => {
+    setAttendance(prev => prev.map(a => 
+      a.name === displayName && a.leaveAt === 'ACTIVE' 
+      ? { ...a, leaveAt: new Date().toLocaleTimeString() } 
+      : a
+    ));
+    navigate('/');
+  };
+
   // Persistent Chat Sync
   useEffect(() => {
     if (!hasJoined || !normalizedCode) return;
@@ -535,147 +545,103 @@ export default function Meeting({ session: _session }: MeetingProps) {
   
   if (!hasJoined) {
     return (
-      <div className="min-h-screen bg-[var(--bg-void)] flex flex-col items-center justify-center p-6 overflow-hidden relative font-sans">
-        <div className="absolute top-[0%] left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent" />
-        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[var(--accent-plasma)]/5 blur-[120px] pointer-events-none" />
-        
-        <div className="z-10 w-full max-w-sm flex flex-col items-center gap-8">
-          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 shadow-xl group">
-            <div className="w-8 h-8 rounded-xl bg-[var(--accent-plasma)] flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.4)] group-hover:scale-110 transition-transform">
-              <Mic className="w-4 h-4 text-white" aria-hidden="true" />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-xs font-black uppercase tracking-tighter text-white italic leading-none">VoiceMeet Protocol</h1>
-              <p className="text-[7px] font-black text-slate-500 uppercase tracking-[0.3em] leading-none mt-1.5">Node Authorization Terminal</p>
-            </div>
-          </div>
-          
+      <div className="min-h-screen bg-[#00040A] flex items-center justify-center p-4 md:p-8 font-sans relative overflow-hidden">
+        {/* Background Visuals */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[180px]" />
+          <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/10 blur-[180px]" />
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+        </div>
+        <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+          {/* Left: Video Preview */}
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-[var(--bg-strata-1)]/95 border border-white/10 rounded-[3rem] p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] space-y-10 relative overflow-hidden backdrop-blur-3xl"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-6"
           >
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-plasma)] to-transparent opacity-20" />
-            <div className="space-y-10">
-               <div className="text-center space-y-3">
-                 <h2 className="text-2xl font-black text-white uppercase tracking-tight italic">Identity Lock</h2>
-                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">Secure your cryptographic identifier before linking to the mesh.</p>
-               </div>
-
-              <div className="flex flex-col items-center gap-8">
-                <div className="relative group/avatar">
-                   {/* Voiceprint Resonance Ring */}
-                   <motion.div
-                      animate={{ 
-                        scale: displayName ? [1, 1.2, 1] : [1, 1.1, 1],
-                        opacity: displayName ? [0.2, 0.5, 0.2] : [0.1, 0.2, 0.1]
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute inset-[-20px] rounded-full border border-[var(--accent-plasma)]/20"
-                   />
-                   <div className="w-32 h-32 rounded-[2.5rem] border border-white/10 flex items-center justify-center p-1.5 bg-white/[0.02] relative z-10 transition-transform active:scale-95 cursor-default">
-                      <div className="absolute inset-0 mesh-shimmer opacity-10 rounded-[2.5rem]" />
-                      <div className="w-full h-full rounded-[2.2rem] bg-[var(--bg-void)] border-2 border-[var(--accent-plasma)]/30 flex items-center justify-center shadow-[inset_0_0_40px_rgba(37,99,235,0.2)] relative overflow-hidden">
-                         <span className="text-5xl font-black text-white italic uppercase drop-shadow-2xl font-mono">{displayName ? displayName.slice(0, 1) : '?'}</span>
-                         
-                         {/* Dynamic Voiceprint SVG Placeholder */}
-                         <div className="absolute bottom-4 inset-x-4 flex items-end gap-0.5 h-6 opacity-40">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-                               <motion.div 
-                                 key={i}
-                                 animate={{ height: displayName ? [4, 12, 4] : 4 }}
-                                 transition={{ duration: 0.5, repeat: Infinity, delay: i * 0.05 }}
-                                 className="flex-1 bg-[var(--accent-plasma)] rounded-full" 
-                               />
-                            ))}
-                         </div>
-                      </div>
-                   </div>
-                   <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-[var(--bg-void)] border border-white/10 shadow-2xl flex items-center justify-center" aria-label="Signal Available">
-                      <ShieldCheck className={cn("w-6 h-6 transition-colors", displayName ? "text-emerald-500" : "text-slate-800")} />
-                   </div>
-                </div>
-                
-                <div className="space-y-4 w-full">
-                  <div className="flex justify-between items-center px-2">
-                     <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-600">Voice Biometric ID</span>
-                     <span className="text-[7px] font-mono text-[var(--accent-plasma)] opacity-40">SHA3_512_ENCODED</span>
+            <div className="aspect-video bg-[#0A0A0F] rounded-[2.5rem] border border-white/10 overflow-hidden relative shadow-2xl group">
+               <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                     <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/10 group-hover:scale-110 transition-transform duration-500">
+                        <Video className="w-10 h-10 text-slate-700" />
+                     </div>
+                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Optic Relay Calibrating</p>
                   </div>
-                  <Input 
-                    id="identity-node"
-                    placeholder="ENTER NODE IDENTITY..." 
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="h-16 bg-black/80 border-white/5 rounded-2xl text-white placeholder:text-slate-900 font-bold text-center uppercase tracking-[0.3em] text-xs border-2 focus-visible:ring-[var(--accent-plasma)] focus-visible:border-[var(--accent-plasma)] shadow-2xl"
-                  />
-                  {displayName && (
-                    <motion.div 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }}
-                      className="flex items-center justify-center gap-2"
-                    >
-                       <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                       <span className="text-[7px] font-black text-emerald-500/60 uppercase tracking-widest">Voice-print Match: 99.8% Confirmed</span>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
-
-                <div className="flex flex-col gap-4">
-                  <Button 
-                    onClick={requestAdmission}
-                    disabled={isJoining || isWaiting || !displayName.trim()}
-                    className="w-full h-16 bg-[var(--accent-plasma)] hover:bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.5em] active:scale-[0.98] transition-all border-none relative overflow-hidden group shadow-[0_20px_40px_rgba(37,99,235,0.3)] flex items-center justify-center gap-4 border-b-4 border-black/20"
-                  >
-                    <div className="absolute inset-0 mesh-shimmer opacity-20" />
-                    {isJoining ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                        SYNCING
-                      </>
-                    ) : isWaiting ? (
-                      <>
-                        <Zap className="w-5 h-5 animate-pulse text-white/50" aria-hidden="true" />
-                        AWAITING HOST
-                      </>
-                    ) : (
-                      <>
-                        <Radio className="w-5 h-5" aria-hidden="true" />
-                        ENGAGE LINK
-                      </>
-                    )}
-                  </Button>
-
-                  {!isHost && (
-                    <Button 
-                      onClick={() => navigate('/')}
-                      variant="ghost" 
-                      className="w-full text-[10px] font-black uppercase text-slate-600 hover:text-white transition-colors tracking-widest h-12"
-                    >
-                      Terminate Intent
-                    </Button>
-                  )}
-
-                <div className="flex items-center justify-center gap-3 pt-6 border-t border-white/5">
-                   <div className="flex gap-1">
-                      {[1,2,3].map(i => <div key={i} className="w-1 h-3 bg-[var(--accent-plasma)]/20 rounded-full animate-wave-2" />)}
-                   </div>
-                   <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.3em]">
-                      BRIDGE_HASH: <span className="text-[var(--accent-plasma)]/60 font-mono italic">{code?.toUpperCase()}</span>
-                   </p>
-                </div>
-              </div>
+               </div>
+               
+               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                  <button className="w-12 h-12 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-all shadow-xl">
+                    <Mic className="w-5 h-5" />
+                  </button>
+                  <button className="w-12 h-12 rounded-full bg-white/5 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 transition-all shadow-xl">
+                    <Video className="w-5 h-5" />
+                  </button>
+               </div>
             </div>
           </motion.div>
-
-          <Button
-            onClick={handlePWAInstall}
-            variant="ghost"
-            className="text-white/20 hover:text-white transition-colors text-[8px] font-black uppercase tracking-widest flex items-center gap-2 h-auto py-2"
+          
+          <motion.div 
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="text-center lg:text-left space-y-10 lg:pl-8"
           >
-             <Download className="w-3.5 h-3.5" />
-             Install Application Node
-          </Button>
+            <div className="space-y-4">
+               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Quantum Link Secured</span>
+               </div>
+               <h1 className="text-4xl md:text-5xl font-black text-white italic uppercase tracking-tight leading-[0.9]">Ready to <br/> <span className="text-[var(--accent-primary)]">Sync?</span></h1>
+               <p className="text-slate-500 font-bold text-sm max-w-sm mx-auto lg:mx-0">
+                  You are attempting to link with mesh <span className="text-white">NODE_{normalizedCode?.toUpperCase()}</span>. Review your telemetry before engaging the handshake.
+               </p>
+            </div>
+
+            <div className="space-y-6">
+               <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest px-1">Display Identity</label>
+                  <Input 
+                    placeholder="ENTER CODENAME..." 
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value.slice(0, 20))}
+                    className="bg-white/5 border-white/10 h-14 rounded-2xl text-lg font-black italic text-white placeholder:text-slate-800 focus-visible:ring-[var(--accent-primary)]"
+                  />
+               </div>
+
+               <div className="flex flex-col gap-4">
+                  <Button 
+                    onClick={requestAdmission}
+                    disabled={!displayName.trim() || isJoining || isWaiting}
+                    className="h-16 rounded-2xl bg-white text-black hover:bg-slate-200 font-black uppercase text-xs tracking-[0.2em] relative overflow-hidden transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] disabled:opacity-50"
+                  >
+                    {isJoining ? (
+                      <div className="flex items-center gap-3">
+                         <Loader2 className="w-5 h-5 animate-spin" />
+                         ENGAGING LINK...
+                      </div>
+                    ) : isWaiting ? "AWAITING CLEARANCE" : "ENGAGE MESH"}
+                  </Button>
+                  
+                  <button 
+                    onClick={() => navigate('/')}
+                    className="text-[10px] font-black text-slate-600 hover:text-white uppercase tracking-widest py-2 transition-all"
+                  >
+                    Terminate Transmission
+                  </button>
+               </div>
+            </div>
+
+            {/* Footer Telemetry */}
+            <div className="pt-8 border-t border-white/5 flex items-center justify-center lg:justify-start gap-8 opacity-40">
+               <div className="flex flex-col">
+                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Protocol</span>
+                  <span className="text-[10px] font-mono text-white">TLS_1.3</span>
+               </div>
+               <div className="flex flex-col">
+                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Encryption</span>
+                  <span className="text-[10px] font-mono text-white">AES_256_GCM</span>
+               </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     );
@@ -683,7 +649,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
 
   return (
     <LiveKitRoom
-      video={false}
+      video={true}
       audio={true}
       token={token!}
       serverUrl={liveKitUrl}
@@ -765,110 +731,103 @@ export default function Meeting({ session: _session }: MeetingProps) {
         </AnimatePresence>
       </div>
 
-      <RoomHeader roomCode={normalizedCode!} />
+      <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
 
-      <main className="flex-1 flex overflow-hidden lg:p-4 gap-4 z-10 relative" role="main">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative pb-[80px]" role="main">
         {/* Zone 1: Participant Stage / Main Visualization */}
-        <div className="flex-1 overflow-hidden relative flex flex-col glass-card-heavy rounded-[2.5rem] border border-white/10 shadow-[var(--shadow-strong)]" role="region" aria-label="Main Video Stage">
-           <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[var(--accent-primary)]/5 to-transparent pointer-events-none" />
-           
-           <div className="flex-1 relative flex flex-col overflow-hidden">
-              <div className="absolute top-6 left-8 z-30 flex flex-col gap-1">
-                 <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-success)] animate-pulse" />
-                    <span className="text-[9px] font-black font-mono text-white/40 uppercase tracking-widest">Active Link Synchronization</span>
-                 </div>
-              </div>
-              
-              <div className="flex-1 relative">
-                 <AnimatePresence mode="wait">
-                   {isGridView ? (
-                     <motion.div 
-                       key="grid"
-                       initial={{ opacity: 0 }}
-                       animate={{ opacity: 1 }}
-                       exit={{ opacity: 0 }}
-                       className="h-full w-full"
-                     >
-                       <ParticipantStage isGridView={true} />
-                     </motion.div>
-                   ) : (
-                     <motion.div 
-                       key="mesh"
-                       initial={{ opacity: 0 }}
-                       animate={{ opacity: 1 }}
-                       exit={{ opacity: 0 }}
-                       className="h-full w-full relative"
-                     >
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl z-10 pointer-events-none flex items-center justify-center">
-                           <div className="text-center space-y-4">
-                              <Radio className="w-12 h-12 text-[var(--accent-primary)] mx-auto animate-pulse" />
-                              <h3 className="text-sm font-black text-white/50 uppercase tracking-[0.5em]">Topology Engine Active</h3>
-                           </div>
-                        </div>
-                        <MeshVisualizer />
-                     </motion.div>
-                   )}
-                 </AnimatePresence>
+        <div className={cn(
+          "flex-1 flex flex-col transition-all duration-300 relative",
+          activeTab !== 'none' ? "lg:mr-[380px]" : ""
+        )} role="region" aria-label="Main Video Stage">
+           <div className="flex-1 relative flex flex-col overflow-hidden p-2 md:p-4">
+              <div className="flex-1 relative glass-card-heavy rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl bg-black/40">
+                  <AnimatePresence mode="wait">
+                    {isGridView ? (
+                      <motion.div 
+                        key="grid"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="h-full w-full"
+                      >
+                        <ParticipantStage isGridView={true} />
+                      </motion.div>
+                    ) : (
+                      <motion.div 
+                        key="mesh"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="h-full w-full relative"
+                      >
+                         <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl z-10 pointer-events-none flex items-center justify-center">
+                            <div className="text-center space-y-4">
+                               <Radio className="w-12 h-12 text-[var(--accent-primary)] mx-auto animate-pulse" />
+                               <h3 className="text-sm font-black text-white/50 uppercase tracking-[0.5em]">Topology Engine Active</h3>
+                            </div>
+                         </div>
+                         <MeshVisualizer />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
               </div>
            </div>
         </div>
 
 
-        {/* Zone 2/3 Side Panels - Persistent Desktop Rail */}
-        <div className="hidden lg:flex flex-col gap-4 w-96 relative z-20">
-           {/* Zone 2: Oracle AI Mission Control (Persistent Top Pod) */}
-           <div className="h-[35%] glass-card-heavy rounded-[2.5rem] border border-white/10 overflow-hidden shadow-strong relative group">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent opacity-30 z-20" />
-              <OraclePanel roomCode={normalizedCode!} />
-           </div>
+        {/* Zone 2/3 Side Panels - Floating but attached desktop pod */}
+        <AnimatePresence>
+          {activeTab !== 'none' && (
+            <motion.div 
+              initial={{ x: 400, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 400, opacity: 0 }}
+              className="hidden lg:flex flex-col fixed top-4 right-4 bottom-[94px] w-[360px] z-20"
+            >
+               <div className="flex-1 glass-card-heavy rounded-[2rem] border border-white/10 overflow-hidden shadow-strong flex flex-col bg-[#050508]/90 backdrop-blur-3xl">
+                  {/* Panel Header */}
+                  <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between">
+                     <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                        {activeTab === 'chat' && 'Mesh Communication'}
+                        {activeTab === 'participants' && 'Active Endpoints'}
+                        {activeTab === 'oracle' && 'Session Intelligence'}
+                     </h2>
+                     <button 
+                       onClick={() => setActiveTab('none')}
+                       className="w-8 h-8 rounded-full hover:bg-white/5 flex items-center justify-center transition-all"
+                     >
+                        <X className="w-4 h-4 text-slate-500 hover:text-white" />
+                     </button>
+                  </div>
 
-           {/* Zone 3: Communication Hub (Switchable Bottom Pod) */}
-           <div className="flex-1 glass-card-heavy rounded-[2.5rem] border border-white/10 overflow-hidden shadow-strong relative flex flex-col">
-              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--accent-primary)]/30 to-transparent opacity-30 z-20" />
-              
-              <Tabs defaultValue={activeTab === 'none' ? 'chat' : activeTab} className="h-full flex flex-col">
-                 <div className="px-8 py-5 border-b border-white/5 bg-black/20">
-                    <TabsList className="bg-white/5 p-1 rounded-xl w-full h-10">
-                       <TabsTrigger 
-                         value="chat" 
-                         onClick={() => setActiveTab('chat')}
-                         className="flex-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-[var(--accent-primary)] data-[state=active]:text-white"
-                       >
-                          Mesh Chat
-                       </TabsTrigger>
-                       <TabsTrigger 
-                         value="participants" 
-                         onClick={() => setActiveTab('participants')}
-                         className="flex-1 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all data-[state=active]:bg-[var(--accent-primary)] data-[state=active]:text-white"
-                       >
-                          Endpoints
-                       </TabsTrigger>
-                    </TabsList>
-                 </div>
-                 
-                 <div className="flex-1 overflow-hidden relative">
-                    <TabsContent value="chat" className="absolute inset-0 m-0">
-                       <ChatPanel 
-                          roomCode={normalizedCode!} 
-                          displayName={displayName} 
-                          messages={messages}
-                          onClose={() => setActiveTab('none')}
-                       />
-                    </TabsContent>
-                    <TabsContent value="participants" className="absolute inset-0 m-0 overflow-y-auto overflow-x-hidden p-6 custom-scrollbar">
-                       <ParticipantsPanel 
-                         isHost={isHost} 
-                         waitingParticipants={waitingParticipants}
-                         onApprove={handleApprove}
-                         onDeny={handleDeny}
-                       />
-                    </TabsContent>
-                 </div>
-              </Tabs>
-           </div>
-        </div>
+                  <div className="flex-1 overflow-hidden relative">
+                     {activeTab === 'chat' && (
+                        <ChatPanel 
+                           roomCode={normalizedCode!} 
+                           displayName={displayName} 
+                           messages={messages}
+                           onClose={() => setActiveTab('none')}
+                        />
+                     )}
+                     {activeTab === 'participants' && (
+                        <ParticipantsPanel 
+                           isHost={isHost} 
+                           waitingParticipants={waitingParticipants}
+                           onApprove={handleApprove}
+                           onDeny={handleDeny}
+                           onExport={exportAttendance}
+                        />
+                     )}
+                     {activeTab === 'oracle' && (
+                        <OraclePanel roomCode={normalizedCode!} />
+                     )}
+                  </div>
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
+
 
         {/* Side Panels - Mobile Drawers */}
         <Drawer.Root 
@@ -907,6 +866,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
                           waitingParticipants={waitingParticipants}
                           onApprove={handleApprove}
                           onDeny={handleDeny}
+                          onExport={exportAttendance}
                        />
                     </div>
                  )}
@@ -924,6 +884,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
         onToggleView={() => setIsGridView(!isGridView)}
         isHighContrast={isHighContrast}
         onToggleContrast={() => setIsHighContrast(!isHighContrast)}
+        onLeave={handleLeave}
       />
       <RoomEventListener 
         onNewMessage={handleNewMessage} 

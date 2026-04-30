@@ -1,9 +1,9 @@
-import { useParticipants, useLocalParticipant } from '@livekit/components-react';
-import { Mic, MicOff, ShieldCheck, Wifi, WifiOff, Activity, Clock, Lock, CheckCircle2 } from 'lucide-react';
+import { useParticipants, useLocalParticipant, VideoTrack } from '@livekit/components-react';
+import { Mic, MicOff, ShieldCheck, Wifi, WifiOff, Activity, Clock, Lock, CheckCircle2, Video, VideoOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
-import { ConnectionQuality } from 'livekit-client';
+import { ConnectionQuality, Track } from 'livekit-client';
 import MetalAvatar from './MetalAvatar';
 
 interface ParticipantStageProps {
@@ -73,93 +73,75 @@ export default function ParticipantStage({ isGridView = true }: ParticipantStage
                 <motion.div
                   key={p.sid}
                   layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    scale: isSpeaking ? 1.01 : 1,
-                  }}
                   className={cn(
-                    "glass-card rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500 min-h-[300px] p-8 text-center border border-white/5 shadow-strong group/card",
-                    isSpeaking ? "border-[var(--accent-success)]/30 bg-[var(--accent-success)]/[0.02]" : "hover:bg-white/[0.01]",
-                    isLocal && "ring-1 ring-white/5"
+                    "relative aspect-video rounded-3xl overflow-hidden bg-[#1E1E1E] transition-all duration-300 border-2",
+                    isSpeaking ? "border-[var(--accent-success)] shadow-[0_0_20px_rgba(16,185,129,0.2)]" : "border-white/5",
+                    isLocal && "ring-1 ring-white/10"
                   )}
                 >
-                  {/* Decorative Industrial Corners */}
-                  <div className="absolute top-0 left-0 w-6 h-6 border-t border-l border-white/10 rounded-tl-[2.5rem] p-1">
-                     <div className="w-full h-full border-t border-l border-white/5 rounded-tl-[2rem]" />
-                  </div>
-                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b border-r border-white/10 rounded-br-[2.5rem] p-1">
-                     <div className="w-full h-full border-b border-r border-white/5 rounded-br-[2rem]" />
-                  </div>
-                  
-                  {/* Status Overlay */}
-                  <div className="absolute top-6 inset-x-8 flex items-center justify-between">
-                     <div className="flex flex-col items-start gap-0.5">
-                        <span className="text-[7px] font-black text-slate-700 uppercase tracking-widest leading-none">ENCRYPT</span>
-                        <span className="text-[8px] font-mono text-emerald-500/40 uppercase tracking-tighter leading-none">AES_256</span>
-                     </div>
-                     <div className="flex items-center gap-3">
-                        {isMuted ? (
-                           <div className="p-2 rounded-xl bg-red-900/10 border border-red-900/20 text-red-500">
-                              <MicOff className="w-3.5 h-3.5" />
-                           </div>
-                        ) : (
-                           <div className={cn("p-2 rounded-xl transition-all", isSpeaking ? "bg-[var(--accent-success)] text-white" : "bg-white/5 border border-white/10 text-slate-700")}>
-                              <Mic className={cn("w-3.5 h-3.5", isSpeaking && "animate-pulse")} />
-                           </div>
-                        )}
-                     </div>
-                  </div>
+                  <AnimatePresence mode="wait">
+                    {p.isCameraEnabled && p.getTrackPublication(Track.Source.Camera) ? (
+                      <motion.div 
+                        key="video"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0"
+                      >
+                         <VideoTrack 
+                           trackRef={{ 
+                             participant: p, 
+                             source: Track.Source.Camera,
+                             publication: p.getTrackPublication(Track.Source.Camera)!
+                           }}
+                           className="w-full h-full object-cover" 
+                         />
+                      </motion.div>
+                    ) : (
+                      <motion.div 
+                        key="avatar"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0A0A0F] to-[#1A1A25]"
+                      >
+                        <MetalAvatar 
+                          name={displayName} 
+                          size={80} 
+                          isSpeaking={isSpeaking}
+                          isMuted={isMuted}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                  {/* Avatar Section */}
-                  <div className="relative mb-6">
-                    <MetalAvatar 
-                      name={displayName} 
-                      size={110} 
-                      isSpeaking={isSpeaking}
-                      isMuted={isMuted}
-                      isHost={isLocal}
-                    />
-                    {isSpeaking && (
-                       <div className="absolute inset-[-10px] rounded-full border border-[var(--accent-success)]/20 animate-pulse" />
+                  {/* Overlays */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-20 pointer-events-none">
+                    <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 flex items-center gap-2">
+                       <span className="text-[11px] font-bold text-white tracking-tight">{displayName} {isLocal && '(You)'}</span>
+                       <div className="w-1 h-1 rounded-full bg-white/20" />
+                       <div className="flex gap-0.5 items-end h-2">
+                          {[1,2,3].map(i => (
+                            <div key={i} className={cn("w-0.5 rounded-full", i <= conn.bars ? "bg-white" : "bg-white/20", i===1 ? "h-1" : i===2 ? "h-1.5" : "h-2")} />
+                          ))}
+                       </div>
+                    </div>
+                    
+                    {isMuted && (
+                      <div className="w-8 h-8 rounded-xl bg-red-500/80 backdrop-blur-md flex items-center justify-center border border-red-400/20">
+                        <MicOff className="w-4 h-4 text-white" />
+                      </div>
                     )}
                   </div>
 
-                  {/* Information Section */}
-                  <div className="space-y-4">
-                    <div className="flex flex-col items-center">
-                       <h3 className={cn(
-                         "text-lg font-black italic uppercase tracking-tighter transition-colors",
-                         isSpeaking ? "text-[var(--accent-success)]" : "text-white/90"
-                       )}>
-                         {displayName}
-                       </h3>
-                       <div className="flex items-center gap-2 mt-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5">
-                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                          <span className="text-[7px] font-mono text-slate-500 tracking-[0.2em]">VERIFIED_{p.sid.slice(0, 6).toUpperCase()}</span>
-                       </div>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3 pt-2">
-                       <div className="flex items-center gap-4 px-4 py-2 bg-black/20 rounded-2xl border border-white/5">
-                          <div className="flex flex-col items-start">
-                             <span className="text-[6px] font-black text-slate-700 uppercase tracking-widest leading-none">Stability</span>
-                             <span className={cn("text-[8px] font-mono leading-none mt-1", conn.color)}>{conn.label}</span>
-                          </div>
-                          <div className="w-px h-5 bg-white/5" />
-                          <div className="flex flex-col items-start pr-2">
-                             <span className="text-[6px] font-black text-slate-700 uppercase tracking-widest leading-none mb-1">Latency</span>
-                             <div className="flex gap-0.5 h-1.5 items-end">
-                                {[1,2,3,4].map(i => <div key={i} className={cn("w-0.5 rounded-full", i <= conn.bars ? "bg-blue-500" : "bg-white/5", i === 1 ? "h-1" : i === 2 ? "h-1.5" : i === 3 ? "h-2" : "h-2.5")} />)}
-                             </div>
-                          </div>
-                       </div>
-                    </div>
+                  {/* Tech Details Overlay (Corner) */}
+                  <div className="absolute top-4 right-4 pointer-events-none">
+                     <span className="text-[8px] font-mono text-white/20 uppercase tracking-tighter">NODE_{p.sid.slice(0, 4)}</span>
                   </div>
                 </motion.div>
               );
             })}
+
           </div>
         )}
       </AnimatePresence>

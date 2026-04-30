@@ -94,6 +94,29 @@ function MeshEdges({ nodes }: { nodes: { id: string, pos: [number, number, numbe
   );
 }
 
+function SceneContent({ nodes, groupRef }: { nodes: any[], groupRef: React.RefObject<THREE.Group> }) {
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.1;
+      groupRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.05) * 0.1;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <MeshEdges nodes={nodes.map(n => ({ id: n.id, pos: n.pos }))} />
+      {nodes.map((node) => (
+        <PeerNode 
+          key={node.id} 
+          position={node.pos} 
+          identity={node.identity} 
+          isSpeaking={node.isSpeaking} 
+        />
+      ))}
+    </group>
+  );
+}
+
 export default function MeshVisualizer() {
   const participants = useParticipants();
   const groupRef = useRef<THREE.Group>(null);
@@ -115,13 +138,6 @@ export default function MeshVisualizer() {
     });
   }, [participants]);
 
-  useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.1;
-      groupRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.05) * 0.1;
-    }
-  });
-
   return (
     <div className="absolute inset-0 z-0">
       <Canvas camera={{ position: [0, 0, 8], fov: 45 }}>
@@ -130,23 +146,13 @@ export default function MeshVisualizer() {
         <pointLight position={[10, 10, 10]} intensity={1.5} />
         <spotLight position={[-10, 10, 10]} angle={0.2} penumbra={1} intensity={1} />
 
-        <GlobalCloud />
-
-        <group ref={groupRef}>
-          <MeshEdges nodes={nodes.map(n => ({ id: n.id, pos: n.pos }))} />
-          {nodes.map((node) => (
-            <PeerNode 
-              key={node.id} 
-              position={node.pos} 
-              identity={node.identity} 
-              isSpeaking={node.isSpeaking} 
-            />
-          ))}
-        </group>
-
-        <EffectComposer>
-          <Bloom luminanceThreshold={0.4} luminanceSmoothing={0.9} height={300} intensity={1.5} />
-        </EffectComposer>
+        <React.Suspense fallback={null}>
+          <GlobalCloud />
+          <SceneContent nodes={nodes} groupRef={groupRef} />
+          <EffectComposer>
+            <Bloom luminanceThreshold={0.4} luminanceSmoothing={0.9} height={300} intensity={1.5} />
+          </EffectComposer>
+        </React.Suspense>
       </Canvas>
     </div>
   );

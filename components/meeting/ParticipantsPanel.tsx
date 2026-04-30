@@ -11,7 +11,9 @@ import {
   UserCheck,
   UserX,
   CheckCircle2,
-  Lock
+  Lock,
+  Video,
+  VideoOff
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -24,12 +26,14 @@ export default function ParticipantsPanel({
   isHost,
   waitingParticipants = [],
   onApprove,
-  onDeny
+  onDeny,
+  onExport
 }: { 
   isHost: boolean,
   waitingParticipants?: any[],
   onApprove?: (id: string) => void,
-  onDeny?: (id: string) => void
+  onDeny?: (id: string) => void,
+  onExport?: () => void
 }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -76,7 +80,18 @@ export default function ParticipantsPanel({
               {participants.length.toString().padStart(2, '0')}
             </span>
          </div>
-         <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-2 px-1">AES-256 Mesh Active</p>
+         <div className="flex items-center justify-between mt-2">
+            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest px-1">AES-256 Mesh Active</p>
+            {isHost && onExport && (
+               <button 
+                 onClick={onExport}
+                 className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 rounded-md border border-white/5 hover:bg-white/10 transition-colors group"
+               >
+                  <Activity className="w-2.5 h-2.5 text-blue-500" />
+                  <span className="text-[8px] font-black text-slate-500 group-hover:text-white uppercase tracking-widest leading-none">Audit PDF</span>
+               </button>
+            )}
+         </div>
       </div>
 
       <ScrollArea className="flex-1">
@@ -134,6 +149,7 @@ export default function ParticipantsPanel({
                   const metadata = JSON.parse(p.metadata || '{}');
                   const displayName = metadata.name || p.identity || 'Anonymous';
                   const isMuted = !p.isMicrophoneEnabled;
+                  const isCameraOn = p.isCameraEnabled;
                   const isSpeaking = p.isSpeaking;
                   const conn = getConnectionInfo(p.connectionQuality);
 
@@ -168,6 +184,8 @@ export default function ParticipantsPanel({
                              {displayName}
                            </h4>
                            {isLocal && <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] shadow-[0_0_5px_rgba(59,130,246,1)]" />}
+                           {isCameraOn ? <Video className="w-2.5 h-2.5 text-blue-500" /> : <VideoOff className="w-2.5 h-2.5 text-slate-800" />}
+                           {isMuted ? <MicOff className="w-2.5 h-2.5 text-red-500" /> : <Mic className="w-2.5 h-2.5 text-emerald-500" />}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                            <span className={cn("text-[7px] font-black uppercase tracking-widest", conn.color)}>{conn.label}</span>
