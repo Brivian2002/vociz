@@ -168,61 +168,70 @@ export default function AudioControlBar({
 
       <div className={cn("flex items-center justify-between w-full lg:w-auto overflow-hidden", isMobile && "flex-1")}>
         {/* Left: System Features Left-Aligned */}
-        {!isMobile && (
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col items-start">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--accent-primary)] font-mono tracking-tighter uppercase whitespace-nowrap opacity-80 decoration-dotted underline underline-offset-4">Node_{localParticipant.sid.slice(0, 6).toUpperCase()}</span>
-                {!isGridView && (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-1.5"
-                  >
-                    <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest whitespace-nowrap">Core_Topology: Active</span>
-                  </motion.div>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1.5">
-                 <WaveformVisualizer className="h-3" />
-                 <span className="text-[6px] font-black text-slate-600 uppercase tracking-[0.2em] leading-none">Signal_Link_Established</span>
-              </div>
+        <div className={cn("flex items-center gap-2 md:gap-6", isMobile ? "min-w-[120px]" : "min-w-[180px]")}>
+          <div className="flex flex-col items-start">
+            <div className="flex items-center gap-1.5 md:gap-2">
+              <span className={cn(
+                "font-mono tracking-tighter uppercase whitespace-nowrap opacity-80 decoration-dotted underline underline-offset-4 text-[var(--accent-primary)]",
+                isMobile ? "text-[8px]" : "text-[10px]"
+              )}>
+                N_{localParticipant.sid.slice(0, 4).toUpperCase()}
+              </span>
+              {!isGridView && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center gap-1 md:gap-1.5"
+                >
+                  <div className={cn("rounded-full bg-blue-500 animate-pulse", isMobile ? "w-0.5 h-0.5" : "w-1 h-1")} />
+                  <span className={cn("font-black text-blue-400 uppercase tracking-widest whitespace-nowrap", isMobile ? "text-[6px]" : "text-[7px]")}>
+                    Top_Active
+                  </span>
+                </motion.div>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-0.5 md:mt-1.5">
+               <WaveformVisualizer className={cn(isMobile ? "h-2" : "h-3")} />
+               <span className={cn("font-black text-slate-600 uppercase tracking-[0.1em] leading-none", isMobile ? "text-[5px]" : "text-[6px]")}>
+                 {isMobile ? 'SYNC' : 'Signal_Link'}
+               </span>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Center: Main Controls */}
-        <div className="flex items-center gap-2 md:gap-3 flex-1 justify-center">
-          <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-1 md:gap-3 flex-1 justify-center", isMobile && "px-1")}>
+          <div className="flex items-center gap-1 md:gap-2">
             <button 
               onClick={toggleMic}
               className={cn(
-                "w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center transition-all",
+                "rounded-full flex items-center justify-center transition-all",
+                isMobile ? "w-8 h-8" : "w-10 h-10 md:w-11 md:h-11",
                 isMicrophoneEnabled ? "bg-[#1E1E1E] text-white hover:bg-white/10" : "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
               )}
             >
-              {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {isMicrophoneEnabled ? <Mic className={isMobile ? "w-4 h-4" : "w-5 h-5"} /> : <MicOff className={isMobile ? "w-4 h-4" : "w-5 h-5"} />}
             </button>
             <button 
               onClick={toggleCamera}
               className={cn(
-                "w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center transition-all",
+                "rounded-full flex items-center justify-center transition-all",
+                isMobile ? "w-8 h-8" : "w-10 h-10 md:w-11 md:h-11",
                 isCameraEnabled ? "bg-[#1E1E1E] text-white hover:bg-white/10" : "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.4)]"
               )}
             >
-              {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              {isCameraEnabled ? <Video className={isMobile ? "w-4 h-4" : "w-5 h-5"} /> : <VideoOff className={isMobile ? "w-4 h-4" : "w-5 h-5"} />}
             </button>
           </div>
 
-          <div className="h-6 w-px bg-white/10 mx-1" />
+          <div className={cn("w-px bg-white/10", isMobile ? "h-4 mx-0.5" : "h-6 mx-1")} />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 md:gap-2">
              <button className="w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all hidden md:flex">
                <Volume2 className="w-5 h-5" />
              </button>
              
-             <div className="relative">
+             <div className={cn("relative", isMobile && "hidden")}>
                <button 
                  onClick={() => setShowEmojiMenu(!showEmojiMenu)}
                  className={cn("w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all", showEmojiMenu && "bg-white/10 text-white")}
@@ -257,15 +266,23 @@ export default function AudioControlBar({
 
              <button 
                onClick={toggleHand}
-               className={cn("w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all", isHandRaised && "text-amber-400 bg-amber-400/10")}
+               className={cn(
+                 "rounded-full flex items-center justify-center transition-all",
+                 isMobile ? "w-8 h-8" : "w-10 h-10",
+                 isHandRaised && "text-amber-400 bg-amber-400/10",
+                 !isHandRaised && "bg-[#1E1E1E] text-white hover:bg-white/10"
+               )}
              >
-               <Hand className="w-5 h-5" />
+               <Hand className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
              </button>
 
              <Drawer.Root direction="bottom">
                <Drawer.Trigger asChild>
-                 <button className="w-10 h-10 rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all">
-                   <MoreHorizontal className="w-5 h-5" />
+                 <button className={cn(
+                   "rounded-full bg-[#1E1E1E] text-white hover:bg-white/10 flex items-center justify-center transition-all",
+                   isMobile ? "w-8 h-8" : "w-10 h-10"
+                 )}>
+                   <MoreHorizontal className={isMobile ? "w-4 h-4" : "w-5 h-5"} />
                  </button>
                </Drawer.Trigger>
                <Drawer.Portal>
@@ -298,32 +315,44 @@ export default function AudioControlBar({
 
           <button 
             onClick={onLeave}
-            className={cn("ml-2 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-lg active:scale-95", isMobile ? "px-4" : "px-6")}
+            className={cn("ml-1 md:ml-2 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-lg active:scale-95", isMobile ? "w-8 h-8" : "h-10 px-6")}
           >
-            <LogOut className="w-5 h-5 rotate-180" />
+            <LogOut className={cn(isMobile ? "w-4 h-4" : "w-5 h-5", "rotate-180")} />
           </button>
         </div>
 
         {/* Right: Info, People, Chat */}
-        <div className={cn("flex items-center gap-1.5 md:gap-2 justify-end", isMobile ? "min-w-[100px]" : "min-w-[200px]")}>
+        <div className={cn("flex items-center gap-1 md:gap-2 justify-end", isMobile ? "min-w-[80px]" : "min-w-[200px]")}>
           <button 
              onClick={() => onToggleTab?.('oracle')}
-             className={cn("w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all", activeTab === 'oracle' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5")}
+             className={cn(
+               "rounded-full flex items-center justify-center transition-all",
+               isMobile ? "w-7 h-7" : "w-9 h-9 md:w-10 md:h-10",
+               activeTab === 'oracle' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5"
+             )}
           >
-            <Target className="w-4 h-4 md:w-5 md:h-5" />
+            <Target className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4 md:w-5 md:h-5"} />
           </button>
           <button 
              onClick={() => onToggleTab?.('participants')}
-             className={cn("w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all relative", activeTab === 'participants' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5")}
+             className={cn(
+               "rounded-full flex items-center justify-center transition-all relative",
+               isMobile ? "w-7 h-7" : "w-9 h-9 md:w-10 md:h-10",
+               activeTab === 'participants' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5"
+             )}
           >
-            <Users className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 md:w-4 md:h-4 bg-blue-500 rounded-full text-[8px] font-black flex items-center justify-center text-white">{participants.length}</span>
+            <Users className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4 md:w-5 md:h-5"} />
+            <span className={cn("absolute top-0 right-0 bg-blue-500 rounded-full text-[8px] font-black flex items-center justify-center text-white", isMobile ? "w-3 h-3" : "w-3.5 h-3.5 md:w-4 md:h-4")}>{participants.length}</span>
           </button>
           <button 
              onClick={() => onToggleTab?.('chat')}
-             className={cn("w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all", activeTab === 'chat' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5")}
+             className={cn(
+               "rounded-full flex items-center justify-center transition-all",
+               isMobile ? "w-7 h-7" : "w-9 h-9 md:w-10 md:h-10",
+               activeTab === 'chat' ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5"
+             )}
           >
-            <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+            <MessageSquare className={isMobile ? "w-3.5 h-3.5" : "w-4 h-4 md:w-5 md:h-5"} />
           </button>
         </div>
       </div>

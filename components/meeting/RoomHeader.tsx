@@ -91,16 +91,14 @@ export default function RoomHeader({ roomCode, joinTime, viewMode, onToggleViewM
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-        {!isMobile && (
-          <div className="flex items-center gap-3 mr-2 border-r border-white/5 pr-4">
-            <div className="flex flex-col items-end">
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Local_Time</span>
-              <span className="text-[11px] font-bold text-white leading-none">
-                {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+        <div className={cn("flex items-center gap-2 md:gap-3 mr-1 md:mr-2 border-r border-white/5 pr-2 md:pr-4", isMobile && "pr-1 mr-1 scale-90")}>
+          <div className="flex flex-col items-end">
+            {!isMobile && <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Local_Time</span>}
+            <span className={cn("font-bold text-white leading-none", isMobile ? "text-[9px]" : "text-[11px]")}>
+              {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </div>
-        )}
+        </div>
         <div className="flex items-center gap-2">
            <button 
              onClick={onToggleViewMode}
