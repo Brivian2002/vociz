@@ -46,6 +46,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import MeshVisualizer from '@/components/meeting/MeshVisualizer';
 
+import { useLocalStorage } from '@/hooks/use-local-storage';
+
 // Global Room Event Listener for Expert Signaling
 function RoomEventListener({ 
   onNewMessage, 
@@ -234,6 +236,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [reactions, setReactions] = useState<{id: string, emoji: string, sender: string}[]>([]);
   const [isGridView, setIsGridView] = useState(true);
+  const [viewMode, setViewMode] = useLocalStorage<'desktop' | 'mobile'>('voicemeet_view_mode', 'desktop');
   const [isHighContrast, setIsHighContrast] = useState(false);
   const [preJoinNotif, setPreJoinNotif] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -731,13 +734,21 @@ export default function Meeting({ session: _session }: MeetingProps) {
         </AnimatePresence>
       </div>
 
-      <RoomHeader roomCode={normalizedCode!} joinTime={joinTime!} />
+      <RoomHeader 
+        roomCode={normalizedCode!} 
+        joinTime={joinTime!} 
+        viewMode={viewMode}
+        onToggleViewMode={() => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop')}
+      />
 
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative pb-[80px]" role="main">
+      <main className={cn(
+        "flex-1 flex flex-col md:flex-row overflow-hidden relative pb-[80px]",
+        viewMode === 'mobile' ? "max-w-md mx-auto w-full" : ""
+      )} role="main">
         {/* Zone 1: Participant Stage / Main Visualization */}
         <div className={cn(
           "flex-1 flex flex-col transition-all duration-300 relative",
-          activeTab !== 'none' ? "lg:mr-[380px]" : ""
+          activeTab !== 'none' && viewMode === 'desktop' ? "lg:mr-[380px]" : ""
         )} role="region" aria-label="Main Video Stage">
            <div className="flex-1 relative flex flex-col overflow-hidden p-2 md:p-4">
               <div className="flex-1 relative glass-card-heavy rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl bg-black/40">
@@ -829,9 +840,9 @@ export default function Meeting({ session: _session }: MeetingProps) {
       </main>
 
 
-        {/* Side Panels - Mobile Drawers */}
+        {/* Side Panels - Mobile Drawers / Global ViewMode check */}
         <Drawer.Root 
-          open={activeTab !== 'none' && typeof window !== 'undefined' && window.innerWidth < 1024} 
+          open={activeTab !== 'none' && (viewMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 1024))} 
           onOpenChange={(open) => !open && setActiveTab('none')}
           direction="bottom"
         >

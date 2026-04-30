@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Radio, Download, ShieldCheck, X, Link as LinkIcon, Copy, Check } from 'lucide-react';
+import { Radio, Download, ShieldCheck, X, Link as LinkIcon, Copy, Check, Smartphone, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 interface RoomHeaderProps {
   roomCode: string;
   joinTime?: Date;
+  viewMode?: 'desktop' | 'mobile';
+  onToggleViewMode?: () => void;
 }
 
-export default function RoomHeader({ roomCode, joinTime }: RoomHeaderProps) {
+export default function RoomHeader({ roomCode, joinTime, viewMode, onToggleViewMode }: RoomHeaderProps) {
   const [now, setNow] = useState(new Date());
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
@@ -92,6 +94,15 @@ export default function RoomHeader({ roomCode, joinTime }: RoomHeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
+           <button 
+             onClick={onToggleViewMode}
+             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-white"
+             title={viewMode === 'desktop' ? 'Switch to Mobile View' : 'Switch to Desktop View'}
+           >
+             {viewMode === 'desktop' ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
+             <span className="hidden sm:inline">{viewMode === 'desktop' ? 'Mobile' : 'Desktop'}</span>
+           </button>
+           
            <InstallPWAHeader />
            <button 
              onClick={() => navigate('/')}
