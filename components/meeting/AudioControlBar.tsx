@@ -167,18 +167,12 @@ export default function AudioControlBar({
       </Dialog>
 
       <div className={cn("flex items-center justify-between w-full lg:w-auto overflow-hidden", isMobile && "flex-1")}>
-        {/* Left: Time & Session ID */}
+        {/* Left: System Features Left-Aligned */}
         {!isMobile && (
-          <div className="flex items-center gap-6 min-w-[280px]">
-            <div className="flex flex-col">
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-start">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold text-white">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <span className="text-[11px] font-mono text-[var(--accent-primary)] font-bold opacity-60">/ {formatTime(meetingTime)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] text-slate-500 font-mono tracking-tighter uppercase whitespace-nowrap">Node_{localParticipant.sid.slice(0, 6).toUpperCase()}</span>
+                <span className="text-[10px] text-[var(--accent-primary)] font-mono tracking-tighter uppercase whitespace-nowrap opacity-80 decoration-dotted underline underline-offset-4">Node_{localParticipant.sid.slice(0, 6).toUpperCase()}</span>
                 {!isGridView && (
                   <motion.div 
                     initial={{ opacity: 0, x: -10 }}
@@ -186,15 +180,14 @@ export default function AudioControlBar({
                     className="flex items-center gap-1.5"
                   >
                     <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest whitespace-nowrap">Topology Engine Active</span>
+                    <span className="text-[7px] font-black text-blue-400 uppercase tracking-widest whitespace-nowrap">Core_Topology: Active</span>
                   </motion.div>
                 )}
               </div>
-            </div>
-            <div className="h-8 w-px bg-white/10" />
-            <div className="flex flex-col items-center gap-1">
-               <WaveformVisualizer className="h-5" />
-               <span className="text-[6px] font-black text-slate-600 uppercase tracking-widest">Signal Sync</span>
+              <div className="flex items-center gap-2 mt-1.5">
+                 <WaveformVisualizer className="h-3" />
+                 <span className="text-[6px] font-black text-slate-600 uppercase tracking-[0.2em] leading-none">Signal_Link_Established</span>
+              </div>
             </div>
           </div>
         )}
