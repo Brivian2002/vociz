@@ -164,39 +164,6 @@ function RoomEventListener({
   return null;
 }
 
-function MeetingTimer() {
-  const [seconds, setSeconds] = useState(0);
-  const [gmtTime, setGmtTime] = useState(new Date().toUTCString());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSeconds(s => s + 1);
-      setGmtTime(new Date().toUTCString());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const format = (sec: number) => {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  return (
-    <div className="flex flex-col gap-2 items-end">
-      <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5 backdrop-blur-md">
-         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse outline outline-4 outline-emerald-500/20" />
-         <span className="text-[10px] font-black font-mono text-white tracking-widest">{format(seconds)}</span>
-      </div>
-      <div className="flex items-center gap-1.5 px-3 py-1 bg-white/[0.02] rounded-lg border border-white/5 opacity-60">
-         <Globe className="w-2.5 h-2.5 text-blue-500" />
-         <span className="text-[8px] font-black text-slate-400 font-mono uppercase tracking-tighter">{gmtTime.slice(-12)} GMT</span>
-      </div>
-    </div>
-  );
-}
-
 interface MeetingProps {
   session?: any;
 }
@@ -779,12 +746,6 @@ export default function Meeting({ session: _session }: MeetingProps) {
                         exit={{ opacity: 0 }}
                         className="h-full w-full relative"
                       >
-                         <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl z-10 pointer-events-none flex items-center justify-center">
-                            <div className="text-center space-y-4">
-                               <Radio className="w-12 h-12 text-[var(--accent-primary)] mx-auto animate-pulse" />
-                               <h3 className="text-sm font-black text-white/50 uppercase tracking-[0.5em]">Topology Engine Active</h3>
-                            </div>
-                         </div>
                          {webglSupported ? (
                            <Suspense fallback={<div className="absolute inset-0 bg-[#050508]" />}>
                              <LazyMeshVisualizer />
