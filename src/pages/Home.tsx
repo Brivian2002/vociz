@@ -26,7 +26,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { isConfigured } from '@/lib/supabase';
 import Avatar from "boring-avatars";
 import { cn } from '@/lib/utils';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useLocalStorage } from '../hooks/use-local-storage';
 
 interface HomeProps {
   session: Session | null;
@@ -34,22 +34,28 @@ interface HomeProps {
 
 const CAROUSEL_ITEMS = [
   {
-    title: "Quantum Mesh",
-    description: "Decentralized peer-to-peer infrastructure that eliminates central failures. Connect directly to the backbone with zero-trust node verification.",
+    title: "The Architecture",
+    headline: "Peer-to-Peer Mesh Networking",
+    description: "Direct device-to-device tunneling that bypasses central surveillance. Your data never touches a server, moving through a globally distributed relay of trusted nodes.",
     image: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&q=80&w=600&h=600",
-    benefit: "Unmatched Reliability"
+    benefit: "Extreme Resilience",
+    how: "Through local WebRTC negotiation and relay fallback."
   },
   {
-    title: "Neural Sync",
-    description: "Spatial audio and ultra-low latency sub-50ms synchronization. Experience presence as if you were in the same physical terminal.",
+    title: "The Performance",
+    headline: "Ultra-Low Latency Nexus",
+    description: "Sub-50ms synchronization across all participants. Experience true 'presence' with spatial audio that feels as immediate as a physical briefing room.",
     image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc51?auto=format&fit=crop&q=80&w=600&h=600",
-    benefit: "Zero Latency"
+    benefit: "Zero Lag",
+    how: "Optimized Opus-Mesh codec with adaptive bit-mapping."
   },
   {
-    title: "Cortex Privacy",
-    description: "Military-grade encryption where individual data streams are fragmented across the mesh, making intercept impossible.",
+    title: "The Security",
+    headline: "Post-Quantum Cryptography",
+    description: "Every audio packet is fragmented and encrypted with AES-256-GCM. Indecipherable to anyone outside your specific mesh terminal.",
     image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=600&h=600",
-    benefit: "Total Anonymity"
+    benefit: "Absolute Privacy",
+    how: "Hardware-level encryption keys rotated every session."
   }
 ];
 
@@ -178,44 +184,59 @@ export default function Home({ session }: HomeProps) {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className={cn("space-y-6 transition-all", viewMode === 'mobile' && "text-center")}
           >
             <div className={cn("inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-2", viewMode === 'mobile' && "mx-auto")}>
                <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
-               <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">End-to-End Encryption Protocol</span>
+               <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Protocol v4.2 Security Stack</span>
             </div>
             
             <div className="space-y-4">
-              <h1 className={cn("text-5xl md:text-6xl font-black text-white leading-[0.9] italic uppercase tracking-tighter transition-all", viewMode === 'mobile' && "text-4xl")}>
-              Deploy. <br/>
-              <span className="text-blue-500 underline decoration-white/10 underline-offset-8">Converge.</span> <br/>
-              Command.
-            </h1>
-              
-              {/* Feature Images Row */}
-              <div className={cn("flex gap-2 pt-4", viewMode === 'mobile' ? "justify-center" : "justify-start")}>
-                {[
-                  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=200&h=200",
-                  "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=200&h=200",
-                  "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=200&h=200"
-                ].map((src, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    className="w-16 h-16 md:w-20 md:h-20 rounded-2xl border border-white/10 overflow-hidden shadow-2xl relative"
-                  >
-                    <img src={src} alt="Protocol Feature" className="w-full h-full object-cover grayscale brightness-50 hover:grayscale-0 hover:brightness-100 transition-all duration-500 cursor-crosshair" referrerPolicy="no-referrer" />
-                    <div className="absolute inset-0 bg-blue-500/10 mix-blend-overlay" />
-                  </motion.div>
-                ))}
+              <h1 className={cn("text-5xl md:text-7xl font-black text-white leading-[0.85] italic uppercase tracking-tighter transition-all", viewMode === 'mobile' && "text-4xl")}>
+                Deploy. <br/>
+                <span className="text-blue-500 underline decoration-white/10 underline-offset-8">Converge.</span> <br/>
+                Command.
+              </h1>
+
+              <div className={cn("flex flex-col gap-4 pt-2", viewMode === 'mobile' ? "items-center" : "items-start")}>
+                <p className={cn("text-lg md:text-xl text-slate-300 leading-tight font-medium transition-all", viewMode === 'mobile' ? "max-w-xs text-center" : "max-w-md text-left")}>
+                  The world's most secure 
+                  <span className="text-blue-400 font-bold px-1">Decentralized Audio Mesh</span> 
+                  for high-stakes tactical coordination.
+                </p>
+
+                {/* Feature Images Row */}
+                <div className={cn("flex gap-2 pt-2", viewMode === 'mobile' ? "justify-center" : "justify-start")}>
+                  {[
+                    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=200&h=200",
+                    "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=200&h=200",
+                    "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=200&h=200"
+                  ].map((src, i) => (
+                    <motion.div 
+                      key={i}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.1 }}
+                      className="w-12 h-12 md:w-16 md:h-16 rounded-xl border border-white/10 overflow-hidden shadow-2xl relative"
+                    >
+                      <img src={src} alt="Protocol Feature" className="w-full h-full object-cover grayscale brightness-50 hover:grayscale-0 hover:brightness-100 transition-all duration-500 cursor-crosshair" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-blue-500/10 mix-blend-overlay" />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <p className={cn("text-lg text-slate-400 leading-relaxed font-medium mx-auto lg:mx-0", viewMode === 'mobile' ? "max-w-xs" : "max-w-md")}>
-              Secure, localized audio and video infrastructure built for high-stakes decentralized coordination.
-            </p>
+            <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4 mt-8", viewMode === 'mobile' ? "text-center" : "text-left max-w-lg")}>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">The "How"</span>
+                <p className="text-xs text-slate-500 leading-relaxed">Direct device-to-device tunneling bypassing central surveillance.</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">The Benefit</span>
+                <p className="text-xs text-slate-500 leading-relaxed">Zero server costs, zero data logs, total operational sovereignty.</p>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div 
@@ -317,7 +338,13 @@ export default function Home({ session }: HomeProps) {
                 </div>
                 <div className="space-y-4">
                   <h2 className="text-4xl font-black italic uppercase tracking-tighter">{CAROUSEL_ITEMS[carouselIndex].title}</h2>
-                  <p className="text-slate-500 text-xs font-black uppercase tracking-widest leading-relaxed max-w-xs">{CAROUSEL_ITEMS[carouselIndex].description}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs font-black text-blue-500 uppercase tracking-widest">{CAROUSEL_ITEMS[carouselIndex].headline}</p>
+                    <p className="text-slate-500 text-[11px] font-medium leading-relaxed max-w-xs mx-auto">{CAROUSEL_ITEMS[carouselIndex].description}</p>
+                    <div className="pt-2">
+                      <span className="text-[8px] font-black text-slate-700 uppercase tracking-[0.2em]">{CAROUSEL_ITEMS[carouselIndex].how}</span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>

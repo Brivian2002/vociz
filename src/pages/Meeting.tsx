@@ -46,7 +46,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import MeshVisualizer from '@/components/meeting/MeshVisualizer';
 
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useLocalStorage } from '../hooks/use-local-storage';
 
 // Global Room Event Listener for Expert Signaling
 function RoomEventListener({ 
@@ -742,7 +742,7 @@ export default function Meeting({ session: _session }: MeetingProps) {
       />
 
       <main className={cn(
-        "flex-1 flex flex-col md:flex-row overflow-hidden relative pb-[80px]",
+        "flex-1 flex flex-col md:flex-row overflow-hidden relative pb-[70px] md:pb-[80px]",
         viewMode === 'mobile' ? "max-w-md mx-auto w-full" : ""
       )} role="main">
         {/* Zone 1: Participant Stage / Main Visualization */}

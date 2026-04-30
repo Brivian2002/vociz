@@ -13,7 +13,19 @@ import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import InstallPWA from '@/components/InstallPWA';
 
+import { useLocalStorage } from './hooks/use-local-storage';
+
 export default function App() {
+  const [viewMode] = useLocalStorage<'desktop' | 'mobile'>('voicemeet_view_mode', 'desktop');
+
+  useEffect(() => {
+    if (viewMode === 'mobile') {
+      document.documentElement.classList.add('mobile-view');
+    } else {
+      document.documentElement.classList.remove('mobile-view');
+    }
+  }, [viewMode]);
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-background text-foreground">

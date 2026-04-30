@@ -58,7 +58,10 @@
     -webkit-font-smoothing: antialiased;
   }
   html {
-    @apply text-[16px];
+    @apply text-[16px] transition-[font-size] duration-500;
+  }
+  html.mobile-view {
+    @apply text-[10px];
   }
 }
 
